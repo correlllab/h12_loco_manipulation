@@ -1,6 +1,6 @@
 # Policy and model paths
-policy_path: "/home/humanoid/isaac_gym_projects/OpenHomie/HomieRL/legged_gym/logs/h1_2/exported/policies/policy.pt"
-xml_path: "/home/humanoid/isaac_gym_projects/OpenHomie/HomieRL/legged_gym/resources/robots/h1_2_27dof/scene.xml"
+policy_path: "/home/humanoid/isaac_gym_projects/h12_loco_manipulation/h12_rl/legged_gym/logs/exported/policies/policy.pt"
+xml_path: "/home/humanoid/isaac_gym_projects/h12_loco_manipulation/h12_rl/legged_gym/resources/robots/h1_2_27dof/scene.xml"
 
 # Simulation parameters
 simulation_duration: 60.0
@@ -15,26 +15,25 @@ kps_legs: [200, 200, 200, 300, 60, 40,
 kds_legs: [5.0, 5.0, 5.0, 7.5, 1.0, 0.3,
      5.0, 5.0, 5.0, 7.5, 1.0, 0.3]
 
-
-
 # PD gains arms
-kps_arms: [500, 500, 500, 500, 500, 500, 500.0,
-          500.0,
-          500, 500, 500, 500, 500, 500, 500.0]
+kps_arms: [150.0,
+          200, 200, 150, 150, 150, 50, 50.0,
+          200, 200, 150, 150, 150, 50, 50.0]
 
 
-kds_arms: [5.0, 5.0, 5.0, 7.5, 1.0, 0.3, 0.0,
-          0.0,
-     5.0, 5.0, 5.0, 7.5, 1.0, 0.3, 0.0]
+kds_arms: [3.0,
+          6.0, 6.0, 4.0, 4.0, 4.0, 3.0, 3.0,
+          6.0, 6.0, 4.0, 4.0, 4.0, 3.0, 3.0]
 
 
 # Default joint angles for legs
-default_angles_legs: [-0.16, 0.0, 0.0, 0.36, -0.2, 0.0,
-                 -0.16, 0.0, 0.0, 0.36, -0.2, 0.0]
+default_angles_legs: [-0.16, 0.0, 0.0, 0.36, -0.2,0.0,
+                    -0.16, 0.0, 0.0, 0.36, -0.2, 0.0]
 
-default_angles_arms: [0.4, 0.2, 0.0, 0.0, 0.8, 0.0, 0.0,
-                      0.0,
-                     0.7, 0.2,0.4, 0.0, 0.5, 0.0, 0.0]
+default_angles_arms: [0.0,
+               0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+               0.0, 0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                     ]
 
 
 # Scaling factors
@@ -51,4 +50,4 @@ obs_history_len: 6
 
 # Initial commands
 cmd_init: [0.0, 0.0, 0.0]
-height_cmd: 0.70
+height_cmd: 0.8

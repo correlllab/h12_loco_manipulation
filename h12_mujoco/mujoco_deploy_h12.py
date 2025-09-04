@@ -9,6 +9,71 @@ import mujoco
 import mujoco.viewer
 from legged_gym import LEGGED_GYM_ROOT_DIR
 
+import pygame
+
+######################################################################
+
+# Track key states manually
+key_states = {
+    "w": False, "s": False, "a": False, "d": False,
+    "q": False, "e": False, "r": False, "f": False, "x":False,
+}
+
+def handle_input(cmd, delta=0.005):
+    global key_states
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
+        elif event.type == pygame.KEYDOWN:
+            key_name = pygame.key.name(event.key)
+            if key_name in key_states:
+                key_states[key_name] = True
+        elif event.type == pygame.KEYUP:
+            key_name = pygame.key.name(event.key)
+            if key_name in key_states:
+                key_states[key_name] = False
+
+    # Forward/Backward (cmd[0])
+    if key_states["w"]:
+        cmd["x"] = min(cmd["x"] + delta, 2.4)
+    if key_states["s"]:
+        cmd["x"] = max(cmd["x"] - delta, -1.6)
+
+    # Left/Right (cmd[1])
+    if key_states["d"]:
+        cmd["y"] = min(cmd["y"] + delta, 1.0)
+    if key_states["a"]:
+        cmd["y"] = max(cmd["y"] - delta, -1.0)
+
+    # Yaw rate (cmd[2])
+    if key_states["q"]:
+        cmd["yaw"] = min(cmd["yaw"] + delta, 0.2)
+    if key_states["e"]:
+        cmd["yaw"] = max(cmd["yaw"] - delta, -0.2)
+
+    # Height
+    if key_states["r"]:
+        cmd["height"] = min(cmd["height"] + delta, 0.75)
+    if key_states["f"]:
+        cmd["height"] = max(cmd["height"] - delta, 0.4)
+
+
+    if key_states["x"]:
+        cmd = {
+        "x": 0.0,
+        "y": 0.0,
+        "yaw": 0.0,
+        "height": 0.75,
+    }
+
+
+    return cmd
+
+
+######################################################################
+
 def load_config(config_path):
     """Load and process the YAML configuration file"""
     with open(config_path, 'r') as f:
@@ -98,7 +163,7 @@ def compute_observation(d, config, action, cmd, height_cmd, n_joints):
 
 def main():
     # Load configuration
-    config = load_config("h1_2_new.yaml")
+    config = load_config("h1_2.yaml")
   #  print("Loaded configuration:", config)
   #  exit(0)  # Exit early for debugging purposes
     # Load robot model

@@ -1,0 +1,51 @@
+{
+  "os": "Linux-6.8.0-65-generic-x86_64-with-glibc2.17",
+  "python": "CPython 3.8.20",
+  "startedAt": "2025-09-04T20:06:35.178891Z",
+  "args": [
+    "--num_envs",
+    "3096",
+    "--task",
+    "h1_2_height",
+    "--max_iterations",
+    "40000",
+    "--run_name",
+    "h1_2_height",
+    "--headless"
+  ],
+  "program": "legged_gym/legged_gym/scripts/train.py",
+  "codePath": "h12_rl/legged_gym/legged_gym/scripts/train.py",
+  "codePathLocal": "legged_gym/legged_gym/scripts/train.py",
+  "git": {
+    "remote": "https://github.com/correlllab/h12_loco_manipulation.git",
+    "commit": "a04c38d150d9efdc4bff277fd8b201045846a7d7"
+  },
+  "email": "nirajpudasaini13@gmail.com",
+  "root": "/home/humanoid/isaac_gym_projects/h12_loco_manipulation/h12_rl",
+  "host": "humanoid",
+  "executable": "/home/humanoid/miniconda3/envs/homieh12rl/bin/python",
+  "cpu_count": 20,
+  "cpu_count_logical": 20,
+  "gpu": "NVIDIA GeForce RTX 4070 Ti SUPER",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "1967317549056",
+      "used": "524438339584"
+    }
+  },
+  "memory": {
+    "total": "33255657472"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 4070 Ti SUPER",
+      "memoryTotal": "17171480576",
+      "cudaCores": 8448,
+      "architecture": "Ada",
+      "uuid": "GPU-7b3d69ca-87b8-aa83-5fd8-3e453207fda9"
+    }
+  ],
+  "cudaVersion": "12.8",
+  "writerId": "7gfcarmvyszyn5zyivre62yj6zryyns5"
+}

@@ -85,10 +85,10 @@ class H12RoughCfg( LeggedRobotCfg ):
         heading_command = False # if true: compute ang vel command from heading error
         heading_to_ang_vel = False
         class ranges( LeggedRobotCfg.commands.ranges):
-            lin_vel_x = [-0.8, 1.0] # min max [m/s]
-            lin_vel_y = [-0.5, 0.5]   # min max [m/s]
-            ang_vel_yaw = [-0.8, 0.8]    # min max [rad/s]
-            heading = [-3.14, 3.14]
+            lin_vel_x = [0.0, 0.0] # min max [m/s]
+            lin_vel_y = [0.0, 0.0]   # min max [m/s]
+            ang_vel_yaw = [0.0, 0.0]    # min max [rad/s]
+            heading = [0, 0]
             height = [-0.6, 0.0]
 
     class asset( LeggedRobotCfg.asset ):

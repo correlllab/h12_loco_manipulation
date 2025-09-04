@@ -1,0 +1,581 @@
+_wandb:
+    value:
+        cli_version: 0.21.1
+        e:
+            egou8kdjxc9g9ulmpe8uuzgnl054z9w3:
+                args:
+                    - --num_envs
+                    - "3096"
+                    - --task
+                    - h1_2_v1
+                    - --max_iterations
+                    - "40000"
+                    - --run_name
+                    - h1_2_height_v1
+                codePath: h12_rl/legged_gym/legged_gym/scripts/train.py
+                codePathLocal: legged_gym/legged_gym/scripts/train.py
+                cpu_count: 20
+                cpu_count_logical: 20
+                cudaVersion: "12.8"
+                disk:
+                    /:
+                        total: "1967317549056"
+                        used: "524333891584"
+                email: nirajpudasaini13@gmail.com
+                executable: /home/humanoid/miniconda3/envs/homieh12rl/bin/python
+                git:
+                    commit: a04c38d150d9efdc4bff277fd8b201045846a7d7
+                    remote: https://github.com/correlllab/h12_loco_manipulation.git
+                gpu: NVIDIA GeForce RTX 4070 Ti SUPER
+                gpu_count: 1
+                gpu_nvidia:
+                    - architecture: Ada
+                      cudaCores: 8448
+                      memoryTotal: "17171480576"
+                      name: NVIDIA GeForce RTX 4070 Ti SUPER
+                      uuid: GPU-7b3d69ca-87b8-aa83-5fd8-3e453207fda9
+                host: humanoid
+                memory:
+                    total: "33255657472"
+                os: Linux-6.8.0-65-generic-x86_64-with-glibc2.17
+                program: legged_gym/legged_gym/scripts/train.py
+                python: CPython 3.8.20
+                root: /home/humanoid/isaac_gym_projects/h12_loco_manipulation/h12_rl
+                startedAt: "2025-09-04T17:29:16.625854Z"
+                writerId: egou8kdjxc9g9ulmpe8uuzgnl054z9w3
+        m: []
+        python_version: 3.8.20
+        t:
+            "1":
+                - 1
+            "2":
+                - 1
+            "3":
+                - 17
+            "4": 3.8.20
+            "5": 0.21.1
+            "12": 0.21.1
+            "13": linux-x86_64
+alg_cfg:
+    value:
+        clip_param: 0.2
+        desired_kl: 0.01
+        entropy_coef: 0.01
+        gamma: 0.99
+        lam: 0.95
+        learning_rate: 0.001
+        max_grad_norm: 1
+        num_learning_epochs: 5
+        num_mini_batches: 4
+        schedule: adaptive
+        symmetry_scale: 1
+        use_clipped_value_loss: true
+        use_flip: true
+        value_loss_coef: 1
+env_cfg:
+    value:
+        asset:
+            angular_damping: 0.01
+            ankle_joints:
+                - left_ankle_roll_joint
+                - right_ankle_roll_joint
+            ankle_sole_distance: 0.04
+            armature: 0.01
+            collapse_fixed_joints: false
+            curriculum_joints: []
+            default_dof_drive_mode: 3
+            density: 0.001
+            disable_gravity: false
+            file: /home/humanoid/isaac_gym_projects/OpenHomie/HomieRL/legged_gym/resources/robots/h1_2/h1_2_27dof.urdf
+            fix_base_link: false
+            flip_visual_attachments: false
+            foot_name: ankle_roll
+            hip_pitch_joints:
+                - right_hip_pitch_joint
+                - left_hip_pitch_joint
+            imu_link: imu_link
+            knee_joints:
+                - left_knee_joint
+                - right_knee_joint
+            knee_names:
+                - left_knee_link
+                - left_hip_yaw_link
+                - right_knee_link
+                - right_hip_yaw_link
+            left_foot_name: left_foot
+            left_hip_joints:
+                - left_hip_roll_joint
+                - left_hip_pitch_joint
+                - left_hip_yaw_joint
+            left_leg_joints:
+                - left_hip_yaw_joint
+                - left_hip_roll_joint
+                - left_hip_pitch_joint
+                - left_knee_joint
+                - left_ankle_pitch_joint
+            linear_damping: 0.01
+            max_angular_velocity: 1000
+            max_linear_velocity: 1000
+            name: h1_2
+            penalize_contacts_on:
+                - hip
+                - knee
+            replace_cylinder_with_capsule: true
+            right_foot_name: right_foot
+            right_hip_joints:
+                - right_hip_roll_joint
+                - right_hip_pitch_joint
+                - right_hip_yaw_joint
+            right_leg_joints:
+                - right_hip_yaw_joint
+                - right_hip_roll_joint
+                - right_hip_pitch_joint
+                - right_knee_joint
+                - right_ankle_pitch_joint
+            self_collision: 1
+            self_collisions: 0
+            terminate_after_contacts_on:
+                - torso
+            thickness: 0.01
+            upper_body_link: torso_link
+        commands:
+            curriculum: false
+            heading_command: false
+            heading_to_ang_vel: false
+            max_curriculum: 1.4
+            num_commands: 5
+            ranges:
+                ang_vel_yaw:
+                    - -0.8
+                    - 0.8
+                heading:
+                    - -3.14
+                    - 3.14
+                height:
+                    - -0.6
+                    - 0
+                lin_vel_x:
+                    - -0.8
+                    - 1
+                lin_vel_y:
+                    - -0.5
+                    - 0.5
+            resampling_time: 4
+        control:
+            action_scale: 0.25
+            control_type: M
+            curriculum_joints: []
+            damping:
+                ankle_pitch: 1
+                ankle_roll: 0.3
+                elbow: 1
+                hip_pitch: 5
+                hip_roll: 5
+                hip_yaw: 5
+                knee: 7.5
+                shoulder_pitch: 2
+                shoulder_roll: 2
+                shoulder_yaw: 1
+                torso: 15
+                wrist: 0.5
+            decimation: 4
+            hip_reduction: 1
+            stiffness:
+                ankle_pitch: 60
+                ankle_roll: 40
+                elbow: 40
+                hip_pitch: 200
+                hip_roll: 200
+                hip_yaw: 200
+                knee: 300
+                shoulder_pitch: 80
+                shoulder_roll: 80
+                shoulder_yaw: 40
+                torso: 600
+                wrist: 60
+        domain_rand:
+            actuation_offset_range:
+                - -0.05
+                - 0.05
+            body_displacement_range:
+                - -0.1
+                - 0.1
+            com_displacement_range:
+                - -0.1
+                - 0.1
+            delay: true
+            friction_range:
+                - 0.1
+                - 3
+            hand_payload_mass_range:
+                - -0.2
+                - 0.5
+            init_upper_ratio: 0
+            initial_joint_pos_offset:
+                - -0.1
+                - 0.1
+            initial_joint_pos_scale:
+                - 0.8
+                - 1.2
+            joint_injection_range:
+                - -0.05
+                - 0.05
+            kd_range:
+                - 0.9
+                - 1.1
+            kp_range:
+                - 0.9
+                - 1.1
+            link_mass_range:
+                - 0.8
+                - 1.2
+            max_push_vel_xy: 0.5
+            payload_mass_range:
+                - -10
+                - 15
+            push_interval: 201
+            push_interval_s: 4
+            push_robots: true
+            randomize_actuation_offset: true
+            randomize_body_displacement: true
+            randomize_com_displacement: false
+            randomize_friction: true
+            randomize_initial_joint_pos: true
+            randomize_joint_injection: true
+            randomize_kd: true
+            randomize_kp: true
+            randomize_link_mass: true
+            randomize_payload_mass: true
+            randomize_restitution: true
+            restitution_range:
+                - 0
+                - 1
+            upper_interval: 51
+            upper_interval_s: 1
+            use_random: true
+        env:
+            action_curriculum: true
+            base_height_target: 1
+            clearance_height_target: 0.09
+            env_spacing: 3
+            episode_length_s: 20
+            least_feet_distance: 0
+            least_feet_distance_lateral: 0
+            max_contact_force: 100
+            num_actions: 12
+            num_actor_history: 6
+            num_critic_history: 1
+            num_dofs: 27
+            num_envs: 3096
+            num_observations: 456
+            num_one_step_observations: 76
+            num_one_step_privileged_obs: 79
+            num_privileged_obs: 79
+            only_positive_rewards: true
+            scales:
+                action_rate: -0.01
+                ang_vel_xy: -0.05
+                base_height: -0
+                collision: -1
+                dof_acc: -2.5e-07
+                dof_vel: -0
+                feet_air_time: 1
+                feet_stumble: -0
+                lin_vel_z: -2
+                orientation: -0
+                stand_still: -0
+                termination: -0
+                torques: -1e-05
+                tracking_ang_vel: 0.5
+                tracking_lin_vel: 1
+            send_timeouts: true
+            soft_dof_pos_limit: 1
+            soft_dof_vel_limit: 1
+            soft_torque_limit: 1
+            tracking_sigma: 0.25
+            upper_teleop: false
+        init_state:
+            ang_vel:
+                - 0
+                - 0
+                - 0
+            default_joint_angles:
+                left_ankle_pitch_joint: -0.2
+                left_ankle_roll_joint: 0
+                left_elbow_pitch_joint: 0.3
+                left_elbow_roll_joint: 0
+                left_hip_pitch_joint: -0.16
+                left_hip_roll_joint: 0
+                left_hip_yaw_joint: 0
+                left_knee_joint: 0.36
+                left_shoulder_pitch_joint: 0.4
+                left_shoulder_roll_joint: 0
+                left_shoulder_yaw_joint: 0
+                left_wrist_pitch_joint: 0
+                left_wrist_yaw_joint: 0
+                right_ankle_pitch_joint: -0.2
+                right_ankle_roll_joint: 0
+                right_elbow_pitch_joint: 0.3
+                right_elbow_roll_joint: 0
+                right_hip_pitch_joint: -0.16
+                right_hip_roll_joint: 0
+                right_hip_yaw_joint: 0
+                right_knee_joint: 0.36
+                right_shoulder_pitch_joint: 0.4
+                right_shoulder_roll_joint: 0
+                right_shoulder_yaw_joint: 0
+                right_wrist_pitch_joint: 0
+                right_wrist_yaw_joint: 0
+                torso_joint: 0
+            lin_vel:
+                - 0
+                - 0
+                - 0
+            pos:
+                - 0
+                - 0
+                - 1
+            rot:
+                - 0
+                - 0
+                - 0
+                - 1
+        noise:
+            add_noise: true
+            border_size: 25
+            curriculum: true
+            dynamic_friction: 1
+            horizontal_scale: 0.1
+            max_init_terrain_level: 5
+            measure_heights: true
+            measured_points_x:
+                - -0.8
+                - -0.7
+                - -0.6
+                - -0.5
+                - -0.4
+                - -0.3
+                - -0.2
+                - -0.1
+                - 0
+                - 0.1
+                - 0.2
+                - 0.3
+                - 0.4
+                - 0.5
+                - 0.6
+                - 0.7
+                - 0.8
+            measured_points_y:
+                - -0.5
+                - -0.4
+                - -0.3
+                - -0.2
+                - -0.1
+                - 0
+                - 0.1
+                - 0.2
+                - 0.3
+                - 0.4
+                - 0.5
+            mesh_type: trimesh
+            noise_level: 1
+            noise_scales:
+                ang_vel: 0.5
+                dof_pos: 0.02
+                dof_vel: 2
+                gravity: 0.05
+                height_measurement: 0.1
+                height_measurements: 0.1
+                lin_vel: 0.1
+            num_cols: 20
+            num_rows: 10
+            restitution: 0
+            selected: false
+            slope_treshold: 0.75
+            static_friction: 1
+            terrain_kwargs: null
+            terrain_length: 8
+            terrain_proportions:
+                - 0.1
+                - 0.2
+                - 0.3
+                - 0.3
+                - 0.1
+            terrain_width: 8
+            vertical_scale: 0.005
+        normalization:
+            clip_actions: 100
+            clip_observations: 100
+            obs_scales:
+                ang_vel: 0.5
+                dof_pos: 1
+                dof_vel: 0.05
+                height_measurements: 5
+                lin_vel: 2
+        rewards:
+            base_height_target: 0.98
+            clearance_height_target: 0.2
+            least_feet_distance: 0.3
+            least_feet_distance_lateral: 0.3
+            least_knee_distance_lateral: 0.3
+            max_contact_force: 600
+            most_feet_distance_lateral: 0.4
+            most_knee_distance_lateral: 0.4
+            only_positive_rewards: false
+            scales:
+                action_rate: -0.01
+                action_vanish: -1
+                ang_vel_xy: -0.025
+                contact_momentum: 0.00025
+                deviation_all_joint: 0
+                deviation_ankle_joint: -0.5
+                deviation_arm_joint: 0
+                deviation_hip_joint: -0.2
+                deviation_knee_joint: -0.75
+                deviation_leg_joint: 0
+                deviation_waist_joint: 0
+                dof_acc: -2.5e-07
+                dof_pos_limits: -2
+                dof_vel: -0.0001
+                dof_vel_limits: -0.002
+                feet_air_time: 0.05
+                feet_clearance: -0.25
+                feet_contact_forces: -0.00025
+                feet_distance: 0
+                feet_distance_lateral: 0.5
+                feet_ground_parallel: -2
+                feet_parallel: -3
+                feet_slip: -0.25
+                feet_stumble: -1.5
+                joint_power: -2e-05
+                joint_tracking_error: -0.1
+                knee_distance_lateral: 1
+                lin_vel_z: -0.5
+                no_fly: 0.75
+                orientation: -1.5
+                smoothness: -0.05
+                stand_still: -0.15
+                torque_limits: -0.1
+                torques: -2.5e-06
+                tracking_ang_vel: 2
+                tracking_base_height: 2
+                tracking_x_vel: 1.5
+                tracking_y_vel: 1
+            soft_dof_pos_limit: 0.975
+            soft_dof_vel_limit: 0.8
+            soft_torque_limit: 0.95
+            tracking_sigma: 0.25
+        seed: 1
+        sim:
+            dt: 0.005
+            gravity:
+                - 0
+                - 0
+                - -9.81
+            physx:
+                bounce_threshold_velocity: 0.5
+                contact_collection: 2
+                contact_offset: 0.01
+                default_buffer_size_multiplier: 5
+                max_depenetration_velocity: 1
+                max_gpu_contact_pairs: 8388608
+                num_position_iterations: 4
+                num_threads: 10
+                num_velocity_iterations: 0
+                rest_offset: 0
+                solver_type: 1
+            substeps: 1
+            up_axis: 1
+        terrain:
+            border_size: 25
+            curriculum: false
+            dynamic_friction: 1
+            horizontal_scale: 0.1
+            max_init_terrain_level: 5
+            measure_heights: true
+            measured_points_x:
+                - -0.8
+                - -0.7
+                - -0.6
+                - -0.5
+                - -0.4
+                - -0.3
+                - -0.2
+                - -0.1
+                - 0
+                - 0.1
+                - 0.2
+                - 0.3
+                - 0.4
+                - 0.5
+                - 0.6
+                - 0.7
+                - 0.8
+            measured_points_y:
+                - -0.5
+                - -0.4
+                - -0.3
+                - -0.2
+                - -0.1
+                - 0
+                - 0.1
+                - 0.2
+                - 0.3
+                - 0.4
+                - 0.5
+            mesh_type: plane
+            num_cols: 20
+            num_rows: 10
+            restitution: 0
+            selected: false
+            slope_treshold: 0.75
+            static_friction: 1
+            terrain_kwargs: null
+            terrain_length: 8
+            terrain_proportions:
+                - 0.1
+                - 0.2
+                - 0.3
+                - 0.3
+                - 0.1
+            terrain_width: 8
+            vertical_scale: 0.005
+        viewer:
+            lookat:
+                - 11
+                - 5
+                - 3
+            pos:
+                - 10
+                - 0
+                - 6
+            ref_env: 0
+policy_cfg:
+    value:
+        activation: elu
+        actor_hidden_dims:
+            - 512
+            - 256
+            - 256
+        critic_hidden_dims:
+            - 512
+            - 256
+            - 256
+        init_noise_std: 1
+runner_cfg:
+    value:
+        algorithm_class_name: HIMPPO
+        checkpoint: -1
+        experiment_name: h1_2
+        load_run: -1
+        logger: wandb
+        max_iterations: 40000
+        num_steps_per_env: 50
+        policy_class_name: HIMActorCritic
+        resume: false
+        resume_path: null
+        run_name: h1_2_height_v1
+        save_interval: 200
+        wandb_project: h1_2
+        wandb_user: ""

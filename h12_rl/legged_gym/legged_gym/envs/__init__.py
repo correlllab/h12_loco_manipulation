@@ -37,4 +37,4 @@ import os
 
 from legged_gym.utils.task_registry import task_registry
 
-task_registry.register( "h1_2_v1", LeggedRobot, H12RoughCfg(), H12RoughCfgPPO() )
+task_registry.register( "h1_2_height", LeggedRobot, H12RoughCfg(), H12RoughCfgPPO() )

@@ -116,4 +116,4 @@ if __name__ == '__main__':
     RECORD_FRAMES = False
     MOVE_CAMERA = False
     args = get_args()
-    play(args, x_vel=0.0, y_vel=0.5, yaw_vel=0.0, height=1)
+    play(args, x_vel=0.0, y_vel=0.0, yaw_vel=0.0, height=0.5)
