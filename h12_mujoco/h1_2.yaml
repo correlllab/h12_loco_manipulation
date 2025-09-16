@@ -1,6 +1,6 @@
 # Policy and model paths
-policy_path: "/home/humanoid/isaac_gym_projects/h12_loco_manipulation/h12_rl/legged_gym/logs/exported/policies/policy.pt"
-xml_path: "/home/humanoid/isaac_gym_projects/h12_loco_manipulation/h12_rl/legged_gym/resources/robots/h1_2_27dof/scene.xml"
+policy_path: "/home/niraj/isaac_projects/h12_loco_manipulation/h12_rl/legged_gym/logs/exported/policies/policy.pt"
+xml_path: "/home/niraj/isaac_projects/h12_loco_manipulation/h12_rl/legged_gym/resources/robots/h1_2_27dof/scene.xml"
 
 # Simulation parameters
 simulation_duration: 60.0
@@ -50,4 +50,4 @@ obs_history_len: 6
 
 # Initial commands
 cmd_init: [0.0, 0.0, 0.0]
-height_cmd: 0.8
+height_cmd: 1.00
