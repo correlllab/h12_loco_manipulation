@@ -35,6 +35,14 @@ default_angles_arms: [0.0,
                0.4, 0, 0.0, 0.3, 0.0, 0.0, 0.0,
                      ]
 
+# max torques that can be exerted!
+legs_torque_limits : [
+    200.0, 200.0, 200.0,   # left hip
+    300.0, 
+    60.0, 40.0,   # left knee and foot 
+    200.0, 200.0, 200.0,   # right hip
+    300.0, 
+    60.0, 40.0 ]   # right knee and foot 
 
 # Scaling factors
 ang_vel_scale: 0.25

@@ -11,7 +11,7 @@ class H12RoughCfg( LeggedRobotCfg ):
             'left_knee_joint': 0.36,
             'left_ankle_pitch_joint': -0.2,
             'left_ankle_roll_joint': 0.0,
-
+ 
             'right_hip_yaw_joint': 0,
             'right_hip_roll_joint': 0,
             'right_hip_pitch_joint': -0.16,
