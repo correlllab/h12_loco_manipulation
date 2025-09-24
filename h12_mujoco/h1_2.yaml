@@ -44,6 +44,14 @@ legs_torque_limits : [
     300.0, 
     60.0, 40.0 ]   # right knee and foot 
 
+
+# The joint order is: [hip_yaw, hip_pitch, hip_roll, knee, ankle_pitch, ankle_roll]
+# left first and right leg!
+legs_motor_pos_lower_limit_list: [-0.43, -3.14, -0.43, -0.26, -0.897334, -0.261799,
+                                  -0.43, -3.14, -3.14, -0.26, -0.897334, -0.261799]
+
+legs_motor_pos_upper_limit_list: [0.43, 2.5, 3.14, 2.05, 0.523598, 0.261799,
+                                  0.43, 2.5, 0.43, 2.05, 0.523598, 0.261799]
 # Scaling factors
 ang_vel_scale: 0.25
 dof_pos_scale: 1.0
