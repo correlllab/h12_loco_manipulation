@@ -7,7 +7,6 @@ import torch
 import numpy as np
 import mujoco
 import mujoco.viewer
-from legged_gym import LEGGED_GYM_ROOT_DIR
 
 import pygame
 
@@ -37,9 +36,9 @@ def handle_input(cmd, delta=0.005):
 
     # Forward/Backward (cmd[0])
     if key_states["w"]:
-        cmd["x"] = min(cmd["x"] + delta, 2.4)
+        cmd["x"] = min(cmd["x"] + delta, 1.5)
     if key_states["s"]:
-        cmd["x"] = max(cmd["x"] - delta, -1.6)
+        cmd["x"] = max(cmd["x"] - delta, -1.5)
 
     # Left/Right (cmd[1])
     if key_states["d"]:
@@ -49,15 +48,15 @@ def handle_input(cmd, delta=0.005):
 
     # Yaw rate (cmd[2])
     if key_states["q"]:
-        cmd["yaw"] = min(cmd["yaw"] + delta, 0.2)
+        cmd["yaw"] = min(cmd["yaw"] + delta, 0.5)
     if key_states["e"]:
-        cmd["yaw"] = max(cmd["yaw"] - delta, -0.2)
+        cmd["yaw"] = max(cmd["yaw"] - delta, -0.5)
 
     # Height
     if key_states["r"]:
-        cmd["height"] = min(cmd["height"] + delta, 0.75)
+        cmd["height"] = min(cmd["height"] + delta, 1.0)
     if key_states["f"]:
-        cmd["height"] = max(cmd["height"] - delta, 0.4)
+        cmd["height"] = max(cmd["height"] - delta, 0.65)
 
 
     if key_states["x"]:
@@ -65,12 +64,9 @@ def handle_input(cmd, delta=0.005):
         "x": 0.0,
         "y": 0.0,
         "yaw": 0.0,
-        "height": 0.75,
+        "height": 1.00,
     }
-
-
     return cmd
-
 
 ######################################################################
 
@@ -81,7 +77,7 @@ def load_config(config_path):
 
     # Process paths with LEGGED_GYM_ROOT_DIR
     for path_key in ['policy_path', 'xml_path']:
-        config[path_key] = config[path_key].format(LEGGED_GYM_ROOT_DIR=LEGGED_GYM_ROOT_DIR)
+        config[path_key] = config[path_key]
 
     # Convert lists to numpy arrays where needed
     array_keys = ['kps', 'kds', 'default_angles', 'cmd_scale', 'cmd_init']
@@ -122,36 +118,39 @@ def get_gravity_orientation(quat):
     gravity_vec = np.array([0.0, 0.0, -1.0])
     return quat_rotate_inverse(quat, gravity_vec)
 
+
 def compute_observation(d, config, action, cmd, height_cmd, n_joints):
     """Compute the observation vector from current state"""
     # Get state from MuJoCo
-    qj = d.qpos[7:7+n_joints].copy()    #joint pos
-    dqj = d.qvel[6:6+n_joints].copy()   #joint vel
-    quat = d.qpos[3:7].copy()   #base orientation
-    omega = d.qvel[3:6].copy()  #base angular vel
+    qj = d.qpos[7:7+n_joints].copy()
+    dqj = d.qvel[6:6+n_joints].copy()
+    quat = d.qpos[3:7].copy()
+    omega = d.qvel[3:6].copy()
 
     # Handle default angles padding
-    if len(config['default_angles']) < n_joints:
-        padded_defaults = np.zeros(n_joints, dtype=np.float32)
-        padded_defaults[:len(config['default_angles'])] = config['default_angles']
-    else:
-        padded_defaults = config['default_angles'][:n_joints]
+    default_joints = np.concatenate((config['default_angles_legs'], config['default_angles_arms']))
 
     # Scale the values
-    qj_scaled = (qj - padded_defaults) * config['dof_pos_scale']
+    qj_scaled = (qj - default_joints) * config['dof_pos_scale']
     dqj_scaled = dqj * config['dof_vel_scale']
     gravity_orientation = get_gravity_orientation(quat)
     omega_scaled = omega * config['ang_vel_scale']
+
+    if isinstance(cmd, dict):
+        cmd_array = np.array([cmd["x"], cmd["y"], cmd["yaw"]])
+    else:
+        cmd_array = np.array(cmd)
 
     # Calculate single observation dimension
     single_obs_dim = 3 + 1 + 3 + 3 + n_joints + n_joints + 12
 
     # Create single observation
     single_obs = np.zeros(single_obs_dim, dtype=np.float32)
-    single_obs[0:3] = cmd[:3] * config['cmd_scale']
 
+    single_obs[0:3] = cmd_array* config['cmd_scale']
     single_obs[3:4] = np.array([height_cmd])
-    print("CMD:", single_obs[0:4])
+
+   # print("CMD:", single_obs[0:4])
 
     single_obs[4:7] = omega_scaled
     single_obs[7:10] = gravity_orientation
@@ -173,28 +172,41 @@ def main():
 
     # Check number of joints
     n_joints = d.qpos.shape[0] - 7
-    print(f"Model DOFs (qpos): {d.qpos.shape[0]}, joints: {n_joints}, ctrl size: {d.ctrl.shape[0]}")
+    #print(f"Model DOFs (qpos): {d.qpos.shape[0]}, joints: {n_joints}, ctrl size: {d.ctrl.shape[0]}")
    # print(f"Robot has {n_joints} joints in MuJoCo model")
 
     # Initialize variables
     action = np.zeros(config['num_actions'], dtype=np.float32)
-    target_dof_pos = config['default_angles'].copy()
-    cmd = config['cmd_init'].copy()
-    height_cmd = config['height_cmd']
+    target_dof_legs_pos = config['default_angles_legs'].copy()
 
-    # Initialize observation history
-    single_obs, single_obs_dim = compute_observation(d, config, action, cmd, height_cmd, n_joints)
+    # cmd = config['cmd_init'].copy()
+    # height_cmd = config['height_cmd']
+    cmd = {
+        "x": 0.0,
+        "y": 0.0,
+        "yaw": 0.0,
+        "height": config["height_cmd"]
+    }
+
+   # Initial observation
+    fake_cmd_array = np.array([cmd["x"], cmd["y"], cmd["yaw"]])
+    height_cmd = cmd["height"]
+
+
+    # Initialize observation history as all zeros
+    single_obs, single_obs_dim = compute_observation(d, config, action, fake_cmd_array, height_cmd, n_joints)
+
+
     obs_history = collections.deque(maxlen=config['obs_history_len'])
     for _ in range(config['obs_history_len']):
         obs_history.append(np.zeros(single_obs_dim, dtype=np.float32))
 
     # Prepare full observation vector
     obs = np.zeros(config['num_obs'], dtype=np.float32)
-    # print(config['policy_path'])
-    # exit()
+
     # Load policy
     policy = torch.jit.load(config['policy_path'])
-    print(policy)
+   # print(policy)
     counter = 0
 
     with mujoco.viewer.launch_passive(m, d) as viewer:
@@ -202,25 +214,26 @@ def main():
         while viewer.is_running() and time.time() - start < config['simulation_duration']:
             step_start = time.time()
 
+            # --- Handle keyboard input ---
+            cmd = handle_input(cmd)
+            fake_cmd_array = np.array([cmd["x"], cmd["y"], cmd["yaw"]])
+            height_cmd = cmd["height"]
+
             # Control leg joints with policy
             leg_tau = pd_control(
-                target_dof_pos,
+                target_dof_legs_pos,
                 d.qpos[7:7+config['num_actions']],
-                config['kps'],
-                np.zeros_like(config['kps']),
-                d.qvel[6:6+config['num_actions']],
-                config['kds']
-            )
+                config['kps_legs'],
 
-            # Diagnostics: shapes and value ranges
-            if step_start - start < 1.0:
-                # only print initial step to avoid flooding
-                print("Initial qpos[0:10]:", d.qpos.flatten()[:10])
-                print("Initial qvel[0:10]:", d.qvel.flatten()[:10])
-                print("Initial target_dof_pos:", target_dof_pos[:min(12, len(target_dof_pos))])
+                np.zeros_like(config['kps_legs']),
+                d.qvel[6:6+config['num_actions']],
+                config['kds_legs']
+            )
 
             leg_tau = np.nan_to_num(leg_tau, nan=0.0, posinf=0.0, neginf=0.0)
             # Safety clamp: avoid extremely large torques
+
+            #TO DO - replace this with the actual max torque values from the model
             max_tau = 200.0
             leg_tau = np.clip(leg_tau, -max_tau, max_tau)
 
@@ -229,23 +242,24 @@ def main():
 
             # Keep other joints at zero positions if they exist
             if n_joints > config['num_actions']:
-                arm_kp = 500.0
-                arm_kd = 5.0
-                arm_target_positions = np.zeros(n_joints - config['num_actions'], dtype=np.float32)
+
+                target_dof_arms_pos = config['default_angles_arms'].copy()
 
                 arm_tau = pd_control(
-                    arm_target_positions,
+                    target_dof_arms_pos,
                     d.qpos[7+config['num_actions']:7+n_joints],
-                    np.ones(n_joints-config['num_actions']) * arm_kp,
+                    config['kps_arms'],
+
                     np.zeros(n_joints-config['num_actions']),
                     d.qvel[6+config['num_actions']:6+n_joints],
-                    np.ones(n_joints-config['num_actions']) * arm_kd
+                    config['kds_arms']
                 )
 
-                if d.ctrl.shape[0] > config['num_actions']:
-                    arm_tau = np.nan_to_num(arm_tau, nan=0.0, posinf=0.0, neginf=0.0)
-                    arm_tau = np.clip(arm_tau, -max_tau, max_tau)
-                    d.ctrl[config['num_actions']:] = arm_tau
+                # TO DO - replace this with the actual max torque values from the model
+                # Pass through a function
+                arm_tau = np.nan_to_num(arm_tau, nan=0.0, posinf=0.0, neginf=0.0)
+                arm_tau = np.clip(arm_tau, -max_tau, max_tau)
+                d.ctrl[config['num_actions']:] = arm_tau
 
             # Step physics
             mujoco.mj_step(m, d)
@@ -266,12 +280,8 @@ def main():
                 obs_tensor = torch.from_numpy(obs).unsqueeze(0)
                 action = policy(obs_tensor).detach().numpy().squeeze()
 
-                # Diagnostics for policy output
-                if counter % (config['control_decimation'] * 50) == 0:
-                    print(f"Policy action sample (first 6): {action[:6]} | min/max: {action.min():.3f}/{action.max():.3f}")
-
-                # Transform action to target_dof_pos
-                target_dof_pos = action * config['action_scale'] + config['default_angles']
+                # Transform action to target_dof_legs_pos
+                target_dof_legs_pos = action * config['action_scale'] + config['default_angles_legs']
 
             # Sync viewer
             viewer.sync()
@@ -282,4 +292,6 @@ def main():
                 time.sleep(time_until_next_step)
 
 if __name__ == "__main__":
+    pygame.init()
+    pygame.display.set_mode((300, 100))
     main()
