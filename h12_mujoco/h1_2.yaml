@@ -27,8 +27,8 @@ kds_arms: [3.0,
 
 
 # Default joint angles for legs
-default_angles_legs: [0, -0.16, 0.0, 0.0, 0.36, -0.2,0.0,
-                    0, -0.16, 0.0, 0.0, 0.36, -0.2, 0.0]
+default_angles_legs: [0, -0.16, 0.0, 0.36, -0.2,0.0,
+                    0, -0.16, 0.0, 0.36, -0.2, 0.0]
 
 default_angles_arms: [0.0,
                0.4, 0.0, 0.0, 0.3, 0.0, 0.0, 0.0,
@@ -52,6 +52,7 @@ legs_motor_pos_lower_limit_list: [-0.43, -3.14, -0.43, -0.26, -0.897334, -0.2617
 
 legs_motor_pos_upper_limit_list: [0.43, 2.5, 3.14, 2.05, 0.523598, 0.261799,
                                   0.43, 2.5, 0.43, 2.05, 0.523598, 0.261799]
+
 # Scaling factors
 ang_vel_scale: 0.25
 dof_pos_scale: 1.0

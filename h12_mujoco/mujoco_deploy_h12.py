@@ -80,7 +80,7 @@ def load_config(config_path):
         config[path_key] = config[path_key]
 
     # Convert lists to numpy arrays where needed
-    array_keys = ['kps', 'kds', 'default_angles', 'cmd_scale', 'cmd_init']
+    array_keys = ['kps_legs', 'kds_legs', 'default_angles_legs','kps_arms', 'kds_arms', 'default_angles_arms', 'cmd_scale', 'cmd_init', 'legs_motor_pos_lower_limit_list', 'legs_motor_pos_upper_limit_list']
     for key in array_keys:
         config[key] = np.array(config[key], dtype=np.float32)
 
