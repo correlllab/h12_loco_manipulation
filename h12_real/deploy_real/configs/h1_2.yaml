@@ -44,6 +44,14 @@ dof_vel_scale: 0.05
 action_scale: 0.25
 cmd_scale: [2.0, 2.0, 0.25]
 
+
+# left first and right leg!
+legs_motor_pos_lower_limit_list: [-0.43, -3.14, -0.43, -0.26, -0.897334, -0.261799,
+                                  -0.43, -3.14, -3.14, -0.26, -0.897334, -0.261799]
+
+legs_motor_pos_upper_limit_list: [0.43, 2.5, 3.14, 2.05, 0.523598, 0.261799,
+                                  0.43, 2.5, 0.43, 2.05, 0.523598, 0.261799]
+
 # Number of actions and observations
 num_actions: 12
 num_obs: 456  # 76 * 6 (observation dimension * history length)
