@@ -1,4 +1,11 @@
-from legged_gym import LEGGED_GYM_ROOT_DIR
+# from legged_gym import LEGGED_GYM_ROOT_DIR
+
+import os
+import pickle
+import pygame
+
+import matplotlib.pyplot as plt
+
 from typing import Union
 import numpy as np
 import time
@@ -20,6 +27,86 @@ from common.remote_controller import RemoteController, KeyMap
 from config import Config
 
 
+######################################################################
+# LOGGING AND PLOTTING SETUP
+######################################################################
+
+# Joint names for plotting labels
+joint_names = [
+    "L_hip_yaw", "L_hip_pitch", "L_hip_roll", "L_knee", "L_ankle_pitch", "L_ankle_roll",
+    "R_hip_yaw", "R_hip_pitch", "R_hip_roll", "R_knee", "R_ankle_pitch", "R_ankle_roll"
+]
+
+def plot_qpos_vs_action(t, qpos_hist, target_dof_hist, joint_names, save_path):
+    """Plots measured joint positions against commanded positions."""
+    n_joints = len(joint_names)
+    fig, axes = plt.subplots(n_joints, 1, figsize=(12, 2.5 * n_joints), sharex=True)
+    if n_joints == 1: axes = [axes]
+    for i, name in enumerate(joint_names):
+        axes[i].plot(t, qpos_hist[:, i], label="qpos (measured)", color="blue")
+        axes[i].plot(t, target_dof_hist[:, i], label="target_dof_pos (command)", color="green", linestyle="--")
+        axes[i].set_ylabel(name)
+        axes[i].grid(True)
+        if i == 0: axes[i].set_title("Measured Joint Position vs. Commanded Action")
+        axes[i].legend(loc="upper right", fontsize=8)
+    axes[-1].set_xlabel("Time [s]")
+    plt.tight_layout()
+    plt.savefig(save_path)
+    print(f"✅ Saved overlay plot to {save_path}")
+    plt.close(fig)
+
+def plot_dqpos(t, dqpos_hist, joint_names, save_path):
+    """Plots measured joint velocities."""
+    n_joints = len(joint_names)
+    fig, axes = plt.subplots(n_joints, 1, figsize=(12, 2.5 * n_joints), sharex=True)
+    if n_joints == 1: axes = [axes]
+    for i, name in enumerate(joint_names):
+        axes[i].plot(t, dqpos_hist[:, i], label="dqpos (measured)", color="orange")
+        axes[i].set_ylabel(name)
+        axes[i].grid(True)
+        if i == 0: axes[i].set_title("Measured Joint Velocity")
+        axes[i].legend(loc="upper right", fontsize=8)
+    axes[-1].set_xlabel("Time [s]")
+    plt.tight_layout()
+    plt.savefig(save_path)
+    print(f"✅ Saved velocity plot to {save_path}")
+    plt.close(fig)
+
+######################################################################
+######################################################################
+
+
+######################################################################
+# Input handling - ONLY SQUATTING ALLOWED!
+def handle_input(cmd, delta=0.0005):
+    global key_states
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
+        elif event.type == pygame.KEYDOWN:
+            key_name = pygame.key.name(event.key)
+            if key_name in key_states:
+                key_states[key_name] = True
+        elif event.type == pygame.KEYUP:
+            key_name = pygame.key.name(event.key)
+            if key_name in key_states:
+                key_states[key_name] = False
+
+    if key_states["r"]:
+        cmd["height"] = min(cmd["height"] + delta, 1.0)
+    if key_states["f"]:
+        cmd["height"] = max(cmd["height"] - delta, 0.65)
+    if key_states["x"]:
+        cmd = {"x":0.0, "y":0.0, "yaw":0.0, "height":1.0}
+    return cmd
+
+######################################################################
+
+
+
+
+#######################################################################3
 class Controller:
     def __init__(self, config: Config) -> None:
         self.config = config
@@ -37,6 +124,11 @@ class Controller:
         self.height_cmd = np.array(1.0)
 
         self.counter = 0
+
+
+        # Histories for logging
+        self.qpos_hist, self.dqpos_hist, self.target_dof_hist, self.t_hist = [], [], [], []
+
 
         if config.msg_type == "hg":
             # g1 and h1_2 use the hg msg type
@@ -80,16 +172,14 @@ class Controller:
         print("Successfully connected to the robot.")
 
     def zero_torque_state(self):
-        print("Enter zero torque state.")
-        print("Waiting for the start signal...")
+        print("▶️ Entering zero torque state. Press 'START' on controller to proceed...")
         while self.remote_controller.button[KeyMap.start] != 1:
             create_zero_cmd(self.low_cmd)
             self.send_cmd(self.low_cmd)
             time.sleep(self.config.control_dt)
 
     def move_to_default_pos(self):
-        print("Moving to default pos.")
-        # move time 2s
+        print("▶️ Moving to default position...")
         total_time = 2
         num_step = int(total_time / self.config.control_dt)
 
@@ -117,10 +207,10 @@ class Controller:
                 self.low_cmd.motor_cmd[motor_idx].tau = 0
             self.send_cmd(self.low_cmd)
             time.sleep(self.config.control_dt)
+        print("✅ Reached default position.")
 
     def default_pos_state(self):
-        print("Enter default pos state.")
-        print("Waiting for the Button A signal...")
+        print("▶️ Holding default position. Press 'A' on controller to start RL policy...")
         while self.remote_controller.button[KeyMap.A] != 1:
             for i in range(len(self.config.leg_joint2motor_idx)):
                 motor_idx = self.config.leg_joint2motor_idx[i]
@@ -138,6 +228,7 @@ class Controller:
                 self.low_cmd.motor_cmd[motor_idx].tau = 0
             self.send_cmd(self.low_cmd)
             time.sleep(self.config.control_dt)
+        print("✅ RL Policy Engaged!")
 
     def run(self):
         self.counter += 1
