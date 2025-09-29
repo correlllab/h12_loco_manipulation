@@ -2,7 +2,7 @@
 
 import os
 import pickle
-import pygame
+# import pygame
 
 import matplotlib.pyplot as plt
 
@@ -26,17 +26,32 @@ from common.rotation_helper import get_gravity_orientation, transform_imu_data
 from common.remote_controller import RemoteController, KeyMap
 from config import Config
 
+######################################################################
+# LOGGING
+######################################################################
+
 
 ######################################################################
-# LOGGING AND PLOTTING SETUP
-######################################################################
+# Track key states manually
+key_states = {
+    "w": False, "s": False, "a": False, "d": False,
+    "q": False, "e": False, "r": False, "f": False, "x": False,
+}
 
-# Joint names for plotting labels
+# Histories for logging
+qpos_hist, dqpos_hist, target_dof_hist, t_hist = [], [], [], []
+
+# Joint names (12 dof, adapt if needed)
 joint_names = [
     "L_hip_yaw", "L_hip_pitch", "L_hip_roll", "L_knee", "L_ankle_pitch", "L_ankle_roll",
     "R_hip_yaw", "R_hip_pitch", "R_hip_roll", "R_knee", "R_ankle_pitch", "R_ankle_roll"
 ]
 
+######################################################################
+
+######################################################################
+# PLOTTING SETUP
+######################################################################
 def plot_qpos_vs_action(t, qpos_hist, target_dof_hist, joint_names, save_path):
     """Plots measured joint positions against commanded positions."""
     n_joints = len(joint_names)
@@ -78,28 +93,28 @@ def plot_dqpos(t, dqpos_hist, joint_names, save_path):
 
 ######################################################################
 # Input handling - ONLY SQUATTING ALLOWED!
-def handle_input(cmd, delta=0.0005):
-    global key_states
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            exit()
-        elif event.type == pygame.KEYDOWN:
-            key_name = pygame.key.name(event.key)
-            if key_name in key_states:
-                key_states[key_name] = True
-        elif event.type == pygame.KEYUP:
-            key_name = pygame.key.name(event.key)
-            if key_name in key_states:
-                key_states[key_name] = False
+# def handle_input(cmd, delta=0.0005):
+#     global key_states
+#     for event in pygame.event.get():
+#         if event.type == pygame.QUIT:
+#             pygame.quit()
+#             exit()
+#         elif event.type == pygame.KEYDOWN:
+#             key_name = pygame.key.name(event.key)
+#             if key_name in key_states:
+#                 key_states[key_name] = True
+#         elif event.type == pygame.KEYUP:
+#             key_name = pygame.key.name(event.key)
+#             if key_name in key_states:
+#                 key_states[key_name] = False
 
-    if key_states["r"]:
-        cmd["height"] = min(cmd["height"] + delta, 1.0)
-    if key_states["f"]:
-        cmd["height"] = max(cmd["height"] - delta, 0.65)
-    if key_states["x"]:
-        cmd = {"x":0.0, "y":0.0, "yaw":0.0, "height":1.0}
-    return cmd
+#     if key_states["r"]:
+#         cmd["height"] = min(cmd["height"] + delta, 1.0)
+#     if key_states["f"]:
+#         cmd["height"] = max(cmd["height"] - delta, 0.65)
+#     if key_states["x"]:
+#         cmd = {"x":0.0, "y":0.0, "yaw":0.0, "height":1.0}
+#     return cmd
 
 ######################################################################
 
@@ -120,14 +135,19 @@ class Controller:
         self.action = np.zeros(config.num_actions, dtype=np.float32)
         self.target_dof_pos = config.default_angles.copy()
         self.obs = np.zeros(config.num_obs, dtype=np.float32)
-        self.cmd = np.array([0.0, 0, 0])
+        self.cmd = np.array([0.0, 0.0, 0.0])
         self.height_cmd = np.array(1.0)
 
         self.counter = 0
 
 
+
+        #######################################################################
         # Histories for logging
         self.qpos_hist, self.dqpos_hist, self.target_dof_hist, self.t_hist = [], [], [], []
+        # Start time for relative time history
+        self.start_time = time.time() 
+        #######################################################################
 
 
         if config.msg_type == "hg":
@@ -147,8 +167,9 @@ class Controller:
             raise ValueError("Invalid msg_type")
 
         # wait for the subscriber to receive data
+        print("waiting")
         self.wait_for_low_state()
-
+        print("wait complete")
         # Initialize the command msg
         if config.msg_type == "hg":
             init_cmd_hg(self.low_cmd, self.mode_machine_, self.mode_pr_)
@@ -194,6 +215,13 @@ class Controller:
         for i in range(dof_size):
             init_dof_pos[i] = self.low_state.motor_state[dof_idx[i]].q
 
+
+        # Data Logging Setup for this run
+        current_q = np.zeros(dof_size, dtype=np.float32)
+        current_dq = np.zeros(dof_size, dtype=np.float32)
+        commanded_q = np.zeros(dof_size, dtype=np.float32)
+
+
         # move to default pos
         for i in range(num_step):
             alpha = i / num_step
@@ -230,103 +258,110 @@ class Controller:
             time.sleep(self.config.control_dt)
         print("✅ RL Policy Engaged!")
 
-    def run(self):
-        self.counter += 1
-        # Get the current joint position and velocity
-        for i in range(len(self.config.leg_joint2motor_idx)):
-            self.qj[i] = self.low_state.motor_state[self.config.leg_joint2motor_idx[i]].q
-            self.dqj[i] = self.low_state.motor_state[self.config.leg_joint2motor_idx[i]].dq
+    # def run(self):
+    #     self.counter += 1
+    #     # Get the current joint position and velocity
+    #     for i in range(len(self.config.leg_joint2motor_idx)):
+    #         self.qj[i] = self.low_state.motor_state[self.config.leg_joint2motor_idx[i]].q
+    #         self.dqj[i] = self.low_state.motor_state[self.config.leg_joint2motor_idx[i]].dq
 
-        # imu_state quaternion: w, x, y, z
-        quat = self.low_state.imu_state.quaternion
-        ang_vel = np.array([self.low_state.imu_state.gyroscope], dtype=np.float32)
+    #     # imu_state quaternion: w, x, y, z
+    #     quat = self.low_state.imu_state.quaternion
+    #     ang_vel = np.array([self.low_state.imu_state.gyroscope], dtype=np.float32)
 
-        if self.config.imu_type == "torso":
-            # h1 and h1_2 imu is on the torso
-            # imu data needs to be transformed to the pelvis frame
-            waist_yaw = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].q
-            waist_yaw_omega = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].dq
-            quat, ang_vel = transform_imu_data(waist_yaw=waist_yaw, waist_yaw_omega=waist_yaw_omega, imu_quat=quat, imu_omega=ang_vel)
+    #     if self.config.imu_type == "torso":
+    #         # h1 and h1_2 imu is on the torso
+    #         # imu data needs to be transformed to the pelvis frame
+    #         waist_yaw = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].q
+    #         waist_yaw_omega = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].dq
+    #         quat, ang_vel = transform_imu_data(waist_yaw=waist_yaw, waist_yaw_omega=waist_yaw_omega, imu_quat=quat, imu_omega=ang_vel)
 
-        # create observation
-        gravity_orientation = get_gravity_orientation(quat)
-        qj_obs = self.qj.copy()
-        dqj_obs = self.dqj.copy()
-        qj_obs = (qj_obs - self.config.default_angles) * self.config.dof_pos_scale
-        dqj_obs = dqj_obs * self.config.dof_vel_scale
-        ang_vel = ang_vel * self.config.ang_vel_scale
-        period = 0.8
-        count = self.counter * self.config.control_dt
-        phase = count % period / period
-        sin_phase = np.sin(2 * np.pi * phase)
-        cos_phase = np.cos(2 * np.pi * phase)
+    #     # create observation
+    #     gravity_orientation = get_gravity_orientation(quat)
 
-        self.cmd[0] = self.remote_controller.ly
-        self.cmd[1] = self.remote_controller.lx * -1
-        self.cmd[2] = self.remote_controller.rx * -1
+    #     qj_obs = self.qj.copy()
+    #     dqj_obs = self.dqj.copy()
+        
+    #     qj_obs = (qj_obs - self.config.default_angles) * self.config.dof_pos_scale
+    #     dqj_obs = dqj_obs * self.config.dof_vel_scale
+    #     ang_vel = ang_vel * self.config.ang_vel_scale
 
-        num_actions = self.config.num_actions
-        self.obs[:3] = ang_vel
-        self.obs[3:6] = gravity_orientation
-        self.obs[6:9] = self.cmd * self.config.cmd_scale * self.config.max_cmd
-        self.obs[9 : 9 + num_actions] = qj_obs
-        self.obs[9 + num_actions : 9 + num_actions * 2] = dqj_obs
-        self.obs[9 + num_actions * 2 : 9 + num_actions * 3] = self.action
-        self.obs[9 + num_actions * 3] = sin_phase
-        self.obs[9 + num_actions * 3 + 1] = cos_phase
+    #     self.cmd[0] = self.remote_controller.ly
+    #     self.cmd[1] = self.remote_controller.lx * -1
+    #     self.cmd[2] = self.remote_controller.rx * -1
 
-        # Get the action from the policy network
-        obs_tensor = torch.from_numpy(self.obs).unsqueeze(0)
-        self.action = self.policy(obs_tensor).detach().numpy().squeeze()
+    #     num_actions = self.config.num_actions
+    #     self.obs[:3] = ang_vel
+    #     self.obs[3:6] = gravity_orientation
+    #     self.obs[6:9] = self.cmd * self.config.cmd_scale * self.config.max_cmd
+    #     self.obs[9 : 9 + num_actions] = qj_obs
+    #     self.obs[9 + num_actions : 9 + num_actions * 2] = dqj_obs
+    #     self.obs[9 + num_actions * 2 : 9 + num_actions * 3] = self.action
 
-        # transform action to target_dof_pos
-        target_dof_pos = self.config.default_angles + self.action * self.config.action_scale
+    #     # Get the action from the policy network
+    #     obs_tensor = torch.from_numpy(self.obs).unsqueeze(0)
+    #     self.action = self.policy(obs_tensor).detach().numpy().squeeze()
 
-        # Build low cmd
-        for i in range(len(self.config.leg_joint2motor_idx)):
-            motor_idx = self.config.leg_joint2motor_idx[i]
-            self.low_cmd.motor_cmd[motor_idx].q = target_dof_pos[i]
-            self.low_cmd.motor_cmd[motor_idx].qd = 0
-            self.low_cmd.motor_cmd[motor_idx].kp = self.config.kps[i]
-            self.low_cmd.motor_cmd[motor_idx].kd = self.config.kds[i]
-            self.low_cmd.motor_cmd[motor_idx].tau = 0
+    #     # transform action to target_dof_pos
+    #     target_dof_pos = self.config.default_angles + self.action * self.config.action_scale
 
-        for i in range(len(self.config.arm_waist_joint2motor_idx)):
-            motor_idx = self.config.arm_waist_joint2motor_idx[i]
-            self.low_cmd.motor_cmd[motor_idx].q = self.config.arm_waist_target[i]
-            self.low_cmd.motor_cmd[motor_idx].qd = 0
-            self.low_cmd.motor_cmd[motor_idx].kp = self.config.arm_waist_kps[i]
-            self.low_cmd.motor_cmd[motor_idx].kd = self.config.arm_waist_kds[i]
-            self.low_cmd.motor_cmd[motor_idx].tau = 0
+    #     # Build low cmd
+    #     for i in range(len(self.config.leg_joint2motor_idx)):
+    #         motor_idx = self.config.leg_joint2motor_idx[i]
+    #         self.low_cmd.motor_cmd[motor_idx].q = target_dof_pos[i]
+    #         self.low_cmd.motor_cmd[motor_idx].qd = 0
+    #         self.low_cmd.motor_cmd[motor_idx].kp = self.config.kps[i]
+    #         self.low_cmd.motor_cmd[motor_idx].kd = self.config.kds[i]
+    #         self.low_cmd.motor_cmd[motor_idx].tau = 0
 
-        # send the command
-        self.send_cmd(self.low_cmd)
+    #     for i in range(len(self.config.arm_waist_joint2motor_idx)):
+    #         motor_idx = self.config.arm_waist_joint2motor_idx[i]
+    #         self.low_cmd.motor_cmd[motor_idx].q = self.config.arm_waist_target[i]
+    #         self.low_cmd.motor_cmd[motor_idx].qd = 0
+    #         self.low_cmd.motor_cmd[motor_idx].kp = self.config.arm_waist_kps[i]
+    #         self.low_cmd.motor_cmd[motor_idx].kd = self.config.arm_waist_kds[i]
+    #         self.low_cmd.motor_cmd[motor_idx].tau = 0
 
-        time.sleep(self.config.control_dt)
+    #     # send the command
+    #    # self.send_cmd(self.low_cmd)
+
+    #     time.sleep(self.config.control_dt)
 
 
 if __name__ == "__main__":
     import argparse
-
+    import sys
     parser = argparse.ArgumentParser()
     parser.add_argument("net", type=str, help="network interface")
     parser.add_argument("config", type=str, help="config file name in the configs folder", default="h1_2.yaml")
     args = parser.parse_args()
 
+    # Ensure logs directory exists
+    os.makedirs("logs/real", exist_ok=True)
+    if not t_hist:
+        print("No data logged, skipping plots.")
+        sys.exit()
+
+    
+    qpos_hist_arr = np.array(qpos_hist)
+    dqpos_hist_arr = np.array(dqpos_hist)
+    target_dof_hist_arr = np.array(target_dof_hist)
+    t_hist_arr = np.array(t_hist)
+
     # Load config    # print("Config:", config.action_scale, config.cmd_scale, config.dof_pos_scale, config.dof_vel_scale, config.ang_vel_scale)
     # print("Policy:", config.policy_path)
-    config_path = f"/home/humanoid/isaac_gym_projects/h12_loco_manipulation/h12_real/deploy_real/configs/{args.config}"
+    config_path = f"/home/niraj/isaac_projects/h12_loco_manipulation/h12_real/deploy_real/configs/{args.config}"
     config = Config(config_path)
 
-    # print("Config:", config.action_scale, config.cmd_scale, config.dof_pos_scale, config.dof_vel_scale, config.ang_vel_scale)
-    # print("Policy:", config.policy_path)
-
-    exit()
+    print("Config:", config.action_scale, config.cmd_scale, config.dof_pos_scale, config.dof_vel_scale, config.ang_vel_scale)
+    print("Policy:", config.policy_path)
 
     # Initialize DDS communication
     ChannelFactoryInitialize(0, args.net)
 
     controller = Controller(config)
+
+    print(Controller)
 
     # Enter the zero torque state, press the start key to continue executing
     controller.zero_torque_state()
@@ -339,7 +374,7 @@ if __name__ == "__main__":
 
     while True:
         try:
-            controller.run()
+          #  controller.run()
             # Press the select key to exit
             if controller.remote_controller.button[KeyMap.select] == 1:
                 break

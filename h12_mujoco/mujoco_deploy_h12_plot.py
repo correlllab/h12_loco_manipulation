@@ -73,7 +73,7 @@ def plot_dqpos(t, dqpos_hist, joint_names, save_path="logs/dqpos.png"):
 ######################################################################
 # Input handling
 
-def handle_input(cmd, delta=0.005):
+def handle_input(cmd, delta=0.0005):
     global key_states
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -147,13 +147,21 @@ def compute_observation(d, config, action, cmd, height_cmd, n_joints):
     dqj_scaled = dqj * config['dof_vel_scale']
     gravity_orientation = get_gravity_orientation(quat)
     omega_scaled = omega * config['ang_vel_scale']
+
     cmd_array = np.array([cmd["x"], cmd["y"], cmd["yaw"]]) if isinstance(cmd, dict) else np.array(cmd)
+
     single_obs_dim = 3 + 1 + 3 + 3 + n_joints + n_joints + 12
+
     single_obs = np.zeros(single_obs_dim, dtype=np.float32)
+
     single_obs[0:3] = cmd_array* config['cmd_scale']
+
     single_obs[3:4] = np.array([height_cmd])
+
     single_obs[4:7] = omega_scaled
+    
     single_obs[7:10] = gravity_orientation
+
     single_obs[10:10+n_joints] = qj_scaled
     single_obs[10+n_joints:10+2*n_joints] = dqj_scaled
     single_obs[10+2*n_joints:10+2*n_joints+12] = action

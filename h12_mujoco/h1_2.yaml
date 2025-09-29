@@ -35,18 +35,9 @@ default_angles_arms: [0.0,
                0.4, 0, 0.0, 0.3, 0.0, 0.0, 0.0,
                      ]
 
-# max torques that can be exerted!
-legs_torque_limits : [
-    200.0, 200.0, 200.0,   # left hip
-    300.0, 
-    60.0, 40.0,   # left knee and foot 
-    200.0, 200.0, 200.0,   # right hip
-    300.0, 
-    60.0, 40.0 ]   # right knee and foot 
-
-
 # The joint order is: [hip_yaw, hip_pitch, hip_roll, knee, ankle_pitch, ankle_roll]
 # left first and right leg!
+
 legs_motor_pos_lower_limit_list: [-0.43, -3.14, -0.43, -0.26, -0.897334, -0.261799,
                                   -0.43, -3.14, -3.14, -0.26, -0.897334, -0.261799]
 
@@ -62,8 +53,14 @@ cmd_scale: [2.0, 2.0, 0.25]
 
 # Number of actions and observations
 num_actions: 12
+
+# 4 - lin xy,yaw and height + ang_vel 3, grav proj 3, 2*27 joints, pre_action 12
+# 4+3+3+54+ 12= 76 !
+# that stacked 6 times ! = 456!
+#27*2 = 54 for joint vel and joint angles; ang_vel 3, 
 num_obs: 456  # 76 * 6 (observation dimension * history length)
 obs_history_len: 6
+
 
 # Initial commands
 cmd_init: [0.0, 0.0, 0.0]

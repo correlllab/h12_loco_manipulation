@@ -7,7 +7,7 @@ imu_type: "torso"    # "torso" or "pelvis"
 lowcmd_topic: "rt/lowcmd"
 lowstate_topic: "rt/lowstate"
 
-policy_path: "/home/humanoid/isaac_gym_projects/OpenHomie/HomieRL/legged_gym/logs/h1_2/exported/policies/policy.pt"
+policy_path: "/home/niraj/isaac_projects/h12_loco_manipulation/h12_rl/legged_gym/logs/exported/policies/policy.pt"
 
 leg_joint2motor_idx: [0, 1, 2, 3, 4, 5,
                       6, 7, 8, 9, 10, 11]
