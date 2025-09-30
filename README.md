@@ -9,16 +9,17 @@
 
 
 
-# 1. Installation Guide
+# Installation Guide
 
-## System Requirements
+### System Requirements
 
 - **Operating System**: Recommended Ubuntu 18.04 or later  
 - **GPU**: Nvidia GPU  
 - **Driver Version**: Recommended version 525 or later  
 
+## 0. Create a New Environment 
 
-### 1.1 Create a New Environment
+#### 
 
 Use the following command to create a virtual environment:
 
@@ -26,21 +27,21 @@ Use the following command to create a virtual environment:
 conda create -n unitree_rl python=3.8
 ```
 
-### 1.2 Activate the Virtual Environment
+#### Activate the Virtual Environment
 
 ```bash
 conda activate unitree_rl
 ```
 
-### 1.3 Installing Dependencies 
-#### 1.3.1 Install PyTorch
+## 1. Installing Dependencies 
+### 1.1 Install PyTorch
 
 ```bash
 conda install pytorch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 pytorch-cuda=12.1 -c pytorch -c nvidia
 ```
 
 
-#### 1.3.2 Install Isaac Gym
+### 1.2 Install Isaac Gym
 
 Isaac Gym is a rigid body simulation and training framework provided by Nvidia.
 
@@ -57,7 +58,7 @@ cd isaacgym/python
 pip install -e .
 ```
 
-#### 1.3.3 Install rsl_rl
+### 1.3 Install rsl_rl
 
 
 ##### Download
@@ -84,7 +85,7 @@ pip install -e .
 ```
 
 
-# 2. Install h12_loco_manipulation
+## 2. Install h12_loco_manipulation
 
 
 #### Download
@@ -126,13 +127,15 @@ pip install -e .
 ```
 
 Then you can follow the README.md in each sub-repostory to install all three parts or just one of them.
-<!-- 
-## 📝 TODO List
 
+
+## 3. 📝 TODO List
+
+- \[\] Integrate/test cmd_vel inputs
+- \[\] Integrate rerun for visualization
+- \[\] Add Readme to each RL, sim2sim and sim2real sections
+- \[\] 
 - \[\]
-- \[\]
-- \[\]
-- \[\] -->
 
 ## 📄 License
 
