@@ -61,4 +61,4 @@ obs_history_len: 6
 
 # Initial commands
 cmd_init: [0.0, 0.0, 0.0]
-height_cmd: 1.00
+height_cmd: 1.05

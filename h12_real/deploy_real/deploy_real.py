@@ -59,7 +59,7 @@ def handle_input(cmd, delta=0.0005):
                 key_states[key_name] = event.type == pygame.KEYDOWN
 
     if key_states["r"]:
-        cmd["height"] = min(cmd["height"] + delta, 1.0)
+        cmd["height"] = min(cmd["height"] + delta, 1.03)
     if key_states["f"]:
         cmd["height"] = max(cmd["height"] - delta, 0.70)
     if key_states["x"]:
@@ -124,7 +124,7 @@ class Controller:
         
         self.obs = np.zeros(config.num_obs, dtype=np.float32)
         self.cmd = np.array([0.0, 0.0, 0.0])
-        self.height_cmd = np.array(1.0)
+        self.height_cmd = np.array(1.03)
         self.counter = 0
 
         # Histories for data logging
@@ -379,7 +379,7 @@ class Controller:
         if self.counter <= 2:
             print(f"[{self.counter}] obs_history: {self.obs_history}")
             
-       # self.send_cmd(self.low_cmd)
+        self.send_cmd(self.low_cmd)
       
         t_elapsed = time.time() - t_start
         time_to_sleep = self.config.control_dt - t_elapsed
@@ -411,6 +411,9 @@ if __name__ == "__main__":
     ChannelFactoryInitialize(0, args.net)
 
     controller = Controller(config)
+
+    pygame.init() 
+    pygame.display.set_mode((300, 100)) # Small window for pygame input
 
     controller.zero_torque_state()
 
