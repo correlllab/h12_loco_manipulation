@@ -2,7 +2,7 @@
 
 import os
 import pickle
-# import pygame
+import pygame
 
 import matplotlib.pyplot as plt
 
@@ -10,6 +10,9 @@ from typing import Union
 import numpy as np
 import time
 import torch
+
+import collections # <-- Added for observation history
+
 
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelFactoryInitialize
 from unitree_sdk2py.core.channel import ChannelSubscriber, ChannelFactoryInitialize
@@ -27,31 +30,44 @@ from common.remote_controller import RemoteController, KeyMap
 from config import Config
 
 ######################################################################
-# LOGGING
+## Input & Plotting Configuration
 ######################################################################
 
-
-######################################################################
-# Track key states manually
+# Keyboard state tracking for pygame
 key_states = {
-    "w": False, "s": False, "a": False, "d": False,
-    "q": False, "e": False, "r": False, "f": False, "x": False,
+    "r": False, "f": False, "x": False,
 }
 
-# Histories for logging
-qpos_hist, dqpos_hist, target_dof_hist, t_hist = [], [], [], []
-
-# Joint names (12 dof, adapt if needed)
-joint_names = [
+# Joint names for plotting labels
+JOINT_NAMES_PLOT = [
     "L_hip_yaw", "L_hip_pitch", "L_hip_roll", "L_knee", "L_ankle_pitch", "L_ankle_roll",
     "R_hip_yaw", "R_hip_pitch", "R_hip_roll", "R_knee", "R_ankle_pitch", "R_ankle_roll"
 ]
 
 ######################################################################
+## Utility Functions
+######################################################################
 
-######################################################################
-# PLOTTING SETUP
-######################################################################
+def handle_input(cmd, delta=0.0005):
+    """Handles keyboard input for adjusting commands."""
+    global key_states
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            sys.exit()
+        elif event.type in (pygame.KEYDOWN, pygame.KEYUP):
+            key_name = pygame.key.name(event.key)
+            if key_name in key_states:
+                key_states[key_name] = event.type == pygame.KEYDOWN
+
+    if key_states["r"]:
+        cmd["height"] = min(cmd["height"] + delta, 1.0)
+    if key_states["f"]:
+        cmd["height"] = max(cmd["height"] - delta, 0.65)
+    if key_states["x"]:
+        cmd = {"x": 0.0, "y": 0.0, "yaw": 0.0, "height": 1.0}
+    return cmd
+
 def plot_qpos_vs_action(t, qpos_hist, target_dof_hist, joint_names, save_path):
     """Plots measured joint positions against commanded positions."""
     n_joints = len(joint_names)
@@ -72,6 +88,7 @@ def plot_qpos_vs_action(t, qpos_hist, target_dof_hist, joint_names, save_path):
 
 def plot_dqpos(t, dqpos_hist, joint_names, save_path):
     """Plots measured joint velocities."""
+    # (Implementation is identical to your original code)
     n_joints = len(joint_names)
     fig, axes = plt.subplots(n_joints, 1, figsize=(12, 2.5 * n_joints), sharex=True)
     if n_joints == 1: axes = [axes]
@@ -88,40 +105,8 @@ def plot_dqpos(t, dqpos_hist, joint_names, save_path):
     plt.close(fig)
 
 ######################################################################
+## Main Controller Class
 ######################################################################
-
-
-######################################################################
-# Input handling - ONLY SQUATTING ALLOWED!
-# def handle_input(cmd, delta=0.0005):
-#     global key_states
-#     for event in pygame.event.get():
-#         if event.type == pygame.QUIT:
-#             pygame.quit()
-#             exit()
-#         elif event.type == pygame.KEYDOWN:
-#             key_name = pygame.key.name(event.key)
-#             if key_name in key_states:
-#                 key_states[key_name] = True
-#         elif event.type == pygame.KEYUP:
-#             key_name = pygame.key.name(event.key)
-#             if key_name in key_states:
-#                 key_states[key_name] = False
-
-#     if key_states["r"]:
-#         cmd["height"] = min(cmd["height"] + delta, 1.0)
-#     if key_states["f"]:
-#         cmd["height"] = max(cmd["height"] - delta, 0.65)
-#     if key_states["x"]:
-#         cmd = {"x":0.0, "y":0.0, "yaw":0.0, "height":1.0}
-#     return cmd
-
-######################################################################
-
-
-
-
-#######################################################################3
 class Controller:
     def __init__(self, config: Config) -> None:
         self.config = config
@@ -129,26 +114,29 @@ class Controller:
 
         # Initialize the policy network
         self.policy = torch.jit.load(config.policy_path)
+
         # Initializing process variables
-        self.qj = np.zeros(config.num_actions, dtype=np.float32)
-        self.dqj = np.zeros(config.num_actions, dtype=np.float32)
+        self.qj = np.zeros(config.num_dofs, dtype=np.float32)
+        self.dqj = np.zeros(config.num_dofs, dtype=np.float32)
+
         self.action = np.zeros(config.num_actions, dtype=np.float32)
+
+        # RL observation vector (full size with history)
         self.target_dof_pos = config.default_angles.copy()
+        
         self.obs = np.zeros(config.num_obs, dtype=np.float32)
         self.cmd = np.array([0.0, 0.0, 0.0])
         self.height_cmd = np.array(1.0)
-
         self.counter = 0
 
-
-
-        #######################################################################
-        # Histories for logging
+        # Histories for data logging
         self.qpos_hist, self.dqpos_hist, self.target_dof_hist, self.t_hist = [], [], [], []
-        # Start time for relative time history
-        self.start_time = time.time() 
-        #######################################################################
+        self.start_time = time.time()
 
+
+
+        self.single_obs_dim = (config.num_obs // config.obs_history_len)
+        self.obs_history = collections.deque(maxlen=config.obs_history_len)
 
         if config.msg_type == "hg":
             # g1 and h1_2 use the hg msg type
@@ -258,74 +246,138 @@ class Controller:
             time.sleep(self.config.control_dt)
         print("✅ RL Policy Engaged!")
 
-    # def run(self):
-    #     self.counter += 1
-    #     # Get the current joint position and velocity
-    #     for i in range(len(self.config.leg_joint2motor_idx)):
-    #         self.qj[i] = self.low_state.motor_state[self.config.leg_joint2motor_idx[i]].q
-    #         self.dqj[i] = self.low_state.motor_state[self.config.leg_joint2motor_idx[i]].dq
+    def run(self):
+        self.counter += 1
+        t_start = time.time()  # <-- ADD THIS LINE
+        full_default_angles = np.concatenate((self.config.default_angles, self.config.arm_waist_target), axis=0)
 
-    #     # imu_state quaternion: w, x, y, z
-    #     quat = self.low_state.imu_state.quaternion
-    #     ang_vel = np.array([self.low_state.imu_state.gyroscope], dtype=np.float32)
+        # Get the current joint position and velocity
+        all_motor_indices = self.config.leg_joint2motor_idx + self.config.arm_waist_joint2motor_idx
 
-    #     if self.config.imu_type == "torso":
-    #         # h1 and h1_2 imu is on the torso
-    #         # imu data needs to be transformed to the pelvis frame
-    #         waist_yaw = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].q
-    #         waist_yaw_omega = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].dq
-    #         quat, ang_vel = transform_imu_data(waist_yaw=waist_yaw, waist_yaw_omega=waist_yaw_omega, imu_quat=quat, imu_omega=ang_vel)
+        for i, motor_idx in enumerate(all_motor_indices):
+            # This populates self.qj[0:20] and self.dqj[0:20] (assuming 20 total DOFs)
+            self.qj[i] = self.low_state.motor_state[motor_idx].q
+            self.dqj[i] = self.low_state.motor_state[motor_idx].dq
 
-    #     # create observation
-    #     gravity_orientation = get_gravity_orientation(quat)
+        # imu_state quaternion: w, x, y, z
+        quat = self.low_state.imu_state.quaternion
+        ang_vel = np.array([self.low_state.imu_state.gyroscope], dtype=np.float32)
 
-    #     qj_obs = self.qj.copy()
-    #     dqj_obs = self.dqj.copy()
+        if self.config.imu_type == "torso":
+            # h1 and h1_2 imu is on the torso
+            # imu data needs to be transformed to the pelvis frame
+            waist_yaw = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].q
+            waist_yaw_omega = self.low_state.motor_state[self.config.arm_waist_joint2motor_idx[0]].dq
+            quat, ang_vel = transform_imu_data(waist_yaw=waist_yaw, waist_yaw_omega=waist_yaw_omega, imu_quat=quat, imu_omega=ang_vel)
+
+        # create observation
+        gravity_orientation = get_gravity_orientation(quat)
+
+        num_dofs = self.config.num_dofs   # 27 (qj/dqj size)
+        num_actions = self.config.num_actions # 12 (Policy action size, usually legs)
         
-    #     qj_obs = (qj_obs - self.config.default_angles) * self.config.dof_pos_scale
-    #     dqj_obs = dqj_obs * self.config.dof_vel_scale
-    #     ang_vel = ang_vel * self.config.ang_vel_scale
+        qj_obs = self.qj.copy()
+        dqj_obs = self.dqj.copy()
+        
+        qj_obs = (qj_obs - full_default_angles) * self.config.dof_pos_scale
+        dqj_obs = dqj_obs * self.config.dof_vel_scale
+        ang_vel = ang_vel * self.config.ang_vel_scale
 
-    #     self.cmd[0] = self.remote_controller.ly
-    #     self.cmd[1] = self.remote_controller.lx * -1
-    #     self.cmd[2] = self.remote_controller.rx * -1
 
-    #     num_actions = self.config.num_actions
-    #     self.obs[:3] = ang_vel
-    #     self.obs[3:6] = gravity_orientation
-    #     self.obs[6:9] = self.cmd * self.config.cmd_scale * self.config.max_cmd
-    #     self.obs[9 : 9 + num_actions] = qj_obs
-    #     self.obs[9 + num_actions : 9 + num_actions * 2] = dqj_obs
-    #     self.obs[9 + num_actions * 2 : 9 + num_actions * 3] = self.action
+        # Single observation size = 3 + 1 + 3 + 3 + 27 + 27 + 12 = 76 (assuming 12 actions)
+        single_obs_dim = 3 + 1 + 3 + 3 + num_dofs + num_dofs + num_actions
+        single_obs = np.zeros(single_obs_dim, dtype=np.float32)
+        
+        current_idx = 0
+        single_obs[current_idx : current_idx + 3] = self.cmd
+        current_idx += 3
+        
+        single_obs[current_idx] = self.height_cmd
+        current_idx += 1
 
-    #     # Get the action from the policy network
-    #     obs_tensor = torch.from_numpy(self.obs).unsqueeze(0)
-    #     self.action = self.policy(obs_tensor).detach().numpy().squeeze()
+        # 2. omega_scaled (3 values)
+        single_obs[current_idx : current_idx + 3] = ang_vel
+        current_idx += 3
 
-    #     # transform action to target_dof_pos
-    #     target_dof_pos = self.config.default_angles + self.action * self.config.action_scale
+        # 3. grav_orientation (3 values)
+        single_obs[current_idx : current_idx + 3] = gravity_orientation
+        current_idx += 3
+        
+        # 4. qj_scaled (27 values)
+        single_obs[current_idx : current_idx + num_dofs] = qj_obs
+        current_idx += num_dofs
+        
+        # 5. dqj_scaled (27 values)
+        single_obs[current_idx : current_idx + num_dofs] = dqj_obs
+        current_idx += num_dofs
 
-    #     # Build low cmd
-    #     for i in range(len(self.config.leg_joint2motor_idx)):
-    #         motor_idx = self.config.leg_joint2motor_idx[i]
-    #         self.low_cmd.motor_cmd[motor_idx].q = target_dof_pos[i]
-    #         self.low_cmd.motor_cmd[motor_idx].qd = 0
-    #         self.low_cmd.motor_cmd[motor_idx].kp = self.config.kps[i]
-    #         self.low_cmd.motor_cmd[motor_idx].kd = self.config.kds[i]
-    #         self.low_cmd.motor_cmd[motor_idx].tau = 0
 
-    #     for i in range(len(self.config.arm_waist_joint2motor_idx)):
-    #         motor_idx = self.config.arm_waist_joint2motor_idx[i]
-    #         self.low_cmd.motor_cmd[motor_idx].q = self.config.arm_waist_target[i]
-    #         self.low_cmd.motor_cmd[motor_idx].qd = 0
-    #         self.low_cmd.motor_cmd[motor_idx].kp = self.config.arm_waist_kps[i]
-    #         self.low_cmd.motor_cmd[motor_idx].kd = self.config.arm_waist_kds[i]
-    #         self.low_cmd.motor_cmd[motor_idx].tau = 0
+         # 6. last_action (12 values)
+        single_obs[current_idx : current_idx + num_actions] = self.action
+        # current_idx += num_actions # Not strictly needed if this is the end
+        
+        # --- 4. HISTORY & STACK ---
+        self.obs_history.append(single_obs.copy())
 
-    #     # send the command
-    #    # self.send_cmd(self.low_cmd)
+        # Construct full observation with history (self.obs)
+        for i, hist_obs in enumerate(self.obs_history):
+            start_idx = i * single_obs_dim
+            self.obs[start_idx : start_idx + single_obs_dim] = hist_obs
 
-    #     time.sleep(self.config.control_dt)
+        # --- 5. POLICY INFERENCE ---
+        obs_tensor = torch.from_numpy(self.obs).unsqueeze(0)
+        self.action = self.policy(obs_tensor).detach().cpu().numpy().squeeze()
+
+        # Get the action from the policy network
+        obs_tensor = torch.from_numpy(self.obs).unsqueeze(0)
+        self.action = self.policy(obs_tensor).detach().numpy().squeeze()
+
+        scaled_action = self.action * self.config.action_scale
+
+        clipped_action = np.clip(
+                            scaled_action,
+                            np.array(self.config.legs_motor_pos_lower_limit_list),
+                            np.array(self.config.legs_motor_pos_upper_limit_list))
+        
+        target_dof_pos = self.config.default_angles + clipped_action
+
+        if self.counter <= 5:
+            print(f"[{self.counter}] target dof: {target_dof_pos}")
+            
+        # Build low cmd
+        for i in range(len(self.config.leg_joint2motor_idx)):
+            motor_idx = self.config.leg_joint2motor_idx[i]
+            self.low_cmd.motor_cmd[motor_idx].q = target_dof_pos[i]
+            self.low_cmd.motor_cmd[motor_idx].qd = 0
+            self.low_cmd.motor_cmd[motor_idx].kp = self.config.kps[i]
+            self.low_cmd.motor_cmd[motor_idx].kd = self.config.kds[i]
+            self.low_cmd.motor_cmd[motor_idx].tau = 0
+
+        for i in range(len(self.config.arm_waist_joint2motor_idx)):
+            motor_idx = self.config.arm_waist_joint2motor_idx[i]
+            self.low_cmd.motor_cmd[motor_idx].q = self.config.arm_waist_target[i]
+            self.low_cmd.motor_cmd[motor_idx].qd = 0
+            self.low_cmd.motor_cmd[motor_idx].kp = self.config.arm_waist_kps[i]
+            self.low_cmd.motor_cmd[motor_idx].kd = self.config.arm_waist_kds[i]
+            self.low_cmd.motor_cmd[motor_idx].tau = 0
+
+        if self.counter <= 2:
+            print(f"[{self.counter}] obs_history: {self.obs_history}")
+            
+       # self.send_cmd(self.low_cmd)
+      
+        t_elapsed = time.time() - t_start # <-- ADD THIS LINE
+        time_to_sleep = self.config.control_dt - t_elapsed
+        if time_to_sleep > 0:
+             time.sleep(time_to_sleep)
+
+        # Now, measure the time of the ENTIRE cycle, including the sleep
+        t_full_cycle = time.time() - t_start
+        
+        # Print the full cycle time and the corresponding fixed frequency (50 Hz)
+        print(f"Full Cycle Time: {t_full_cycle:.5f}s (Target: {self.config.control_dt:.3f}s), Frequency: {1.0/t_full_cycle:.1f} Hz")
+
+       # time.sleep(self.config.control_dt)
 
 
 if __name__ == "__main__":
@@ -336,20 +388,21 @@ if __name__ == "__main__":
     parser.add_argument("config", type=str, help="config file name in the configs folder", default="h1_2.yaml")
     args = parser.parse_args()
 
-    # Ensure logs directory exists
-    os.makedirs("logs/real", exist_ok=True)
-    if not t_hist:
-        print("No data logged, skipping plots.")
-        sys.exit()
+    # # Ensure logs directory exists
+    # os.makedirs("logs/real", exist_ok=True)
+    # if not t_hist:
+    #     print("No data logged, skipping plots.")
+    #     sys.exit()
 
     
-    qpos_hist_arr = np.array(qpos_hist)
-    dqpos_hist_arr = np.array(dqpos_hist)
-    target_dof_hist_arr = np.array(target_dof_hist)
-    t_hist_arr = np.array(t_hist)
+    # qpos_hist_arr = np.array(qpos_hist)
+    # dqpos_hist_arr = np.array(dqpos_hist)
+    # target_dof_hist_arr = np.array(target_dof_hist)
+    # t_hist_arr = np.array(t_hist)
 
     # Load config    # print("Config:", config.action_scale, config.cmd_scale, config.dof_pos_scale, config.dof_vel_scale, config.ang_vel_scale)
     # print("Policy:", config.policy_path)
+
     config_path = f"/home/niraj/isaac_projects/h12_loco_manipulation/h12_real/deploy_real/configs/{args.config}"
     config = Config(config_path)
 
@@ -374,7 +427,7 @@ if __name__ == "__main__":
 
     while True:
         try:
-          #  controller.run()
+            controller.run()
             # Press the select key to exit
             if controller.remote_controller.button[KeyMap.select] == 1:
                 break

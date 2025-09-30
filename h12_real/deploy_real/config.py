@@ -38,6 +38,10 @@ class Config:
             self.action_scale = config["action_scale"]
             self.cmd_scale = np.array(config["cmd_scale"], dtype=np.float32)
             # self.max_cmd = np.array(config["max_cmd"], dtype=np.float32)
-
+            self.num_dofs = config["num_dofs"]
             self.num_actions = config["num_actions"]
             self.num_obs = config["num_obs"]
+            self.obs_history_len = config["obs_history_len"]
+
+            self.legs_motor_pos_lower_limit_list = config["legs_motor_pos_lower_limit_list"]
+            self.legs_motor_pos_upper_limit_list = config["legs_motor_pos_upper_limit_list"]

@@ -54,6 +54,7 @@ legs_motor_pos_upper_limit_list: [0.43, 2.5, 3.14, 2.05, 0.523598, 0.261799,
                                   0.43, 2.5, 0.43, 2.05, 0.523598, 0.261799]
 
 # Number of actions and observations
+num_dofs: 27
 num_actions: 12
 num_obs: 456  # 76 * 6 (observation dimension * history length)
 obs_history_len: 6
