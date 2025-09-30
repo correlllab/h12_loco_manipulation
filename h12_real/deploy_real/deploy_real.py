@@ -199,13 +199,6 @@ class Controller:
         for i in range(dof_size):
             init_dof_pos[i] = self.low_state.motor_state[dof_idx[i]].q
 
-
-        # Data Logging Setup for this run
-        current_q = np.zeros(dof_size, dtype=np.float32)
-        current_dq = np.zeros(dof_size, dtype=np.float32)
-        commanded_q = np.zeros(dof_size, dtype=np.float32)
-
-
         # move to default pos
         for i in range(num_step):
             alpha = i / num_step
@@ -245,6 +238,20 @@ class Controller:
     def run(self):
         self.counter += 1
         t_start = time.time()  # <-- ADD THIS LINE
+
+        input_cmd = {
+            "x": self.cmd[0], "y": self.cmd[1], "yaw": self.cmd[2], "height": self.height_cmd
+        }
+        input_cmd = handle_input(input_cmd)
+        
+        # Update internal commands from the returned dictionary
+        self.cmd = np.array([input_cmd["x"], input_cmd["y"], input_cmd["yaw"]])
+        self.height_cmd = input_cmd["height"]
+        
+
+        print("current height: ",self.height_cmd)
+
+
         full_default_angles = np.concatenate((self.config.default_angles, self.config.arm_waist_target), axis=0)
 
         # Get the current joint position and velocity
@@ -385,8 +392,6 @@ class Controller:
         # Print the full cycle time and the corresponding fixed frequency (50 Hz)
         print(f"Full Cycle Time: {t_full_cycle:.5f}s (Target: {self.config.control_dt:.3f}s), Frequency: {1.0/t_full_cycle:.1f} Hz")
 
-       # time.sleep(self.config.control_dt)
-
 
 if __name__ == "__main__":
     import argparse
@@ -407,15 +412,10 @@ if __name__ == "__main__":
 
     controller = Controller(config)
 
-    print(Controller)
-
-    # Enter the zero torque state, press the start key to continue executing
     controller.zero_torque_state()
 
-    # Move to the default position
     controller.move_to_default_pos()
 
-    # Enter the default position state, press the A key to continue executing
     controller.default_pos_state()
 
     while True:
