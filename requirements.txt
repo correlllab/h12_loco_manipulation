@@ -1,6 +1,13 @@
-matplotlib==3.5.3
+# --- rerun compatible ---
+numpy==1.23.5
+matplotlib==3.6.3
+pydantic==1.10.9
+pillow==9.5.0
+pyarrow==14.0.2
+rerun-sdk==0.18.1
+
+# --- original deps ---
 ninja==1.11.1.1
-numpy==1.21.6
 tensorboard==2.11.2
 tensorboard-data-server==0.6.1
 tensorboard-plugin-wit==1.8.1
