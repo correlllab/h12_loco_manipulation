@@ -3,15 +3,13 @@
 import os
 import pickle
 import pygame
-
 import matplotlib.pyplot as plt
-
 from typing import Union
 import numpy as np
 import time
 import torch
 
-import collections # <-- Added for observation history
+import collections
 
 
 from unitree_sdk2py.core.channel import ChannelPublisher, ChannelFactoryInitialize
@@ -63,7 +61,7 @@ def handle_input(cmd, delta=0.0005):
     if key_states["r"]:
         cmd["height"] = min(cmd["height"] + delta, 1.0)
     if key_states["f"]:
-        cmd["height"] = max(cmd["height"] - delta, 0.65)
+        cmd["height"] = max(cmd["height"] - delta, 0.70)
     if key_states["x"]:
         cmd = {"x": 0.0, "y": 0.0, "yaw": 0.0, "height": 1.0}
     return cmd
@@ -132,8 +130,6 @@ class Controller:
         # Histories for data logging
         self.qpos_hist, self.dqpos_hist, self.target_dof_hist, self.t_hist = [], [], [], []
         self.start_time = time.time()
-
-
 
         self.single_obs_dim = (config.num_obs // config.obs_history_len)
         self.obs_history = collections.deque(maxlen=config.obs_history_len)
@@ -341,8 +337,20 @@ class Controller:
         
         target_dof_pos = self.config.default_angles + clipped_action
 
-        if self.counter <= 5:
-            print(f"[{self.counter}] target dof: {target_dof_pos}")
+
+
+        # --- DATA LOGGING ADDITIONS ---
+        current_time = time.time() - self.start_time
+        self.t_hist.append(current_time)
+        self.qpos_hist.append(self.qj.copy()) # Full qpos (27 DOFs)
+        self.dqpos_hist.append(self.dqj.copy()) # Full dqpos (27 DOFs)
+        full_target_dof = np.concatenate((target_dof_pos, self.config.arm_waist_target), axis=0)
+        self.target_dof_hist.append(full_target_dof) 
+        # -----------------------------
+
+
+        # if self.counter <= 5:
+        #     print(f"[{self.counter}] target dof: {target_dof_pos}")
             
         # Build low cmd
         for i in range(len(self.config.leg_joint2motor_idx)):
@@ -366,7 +374,7 @@ class Controller:
             
        # self.send_cmd(self.low_cmd)
       
-        t_elapsed = time.time() - t_start # <-- ADD THIS LINE
+        t_elapsed = time.time() - t_start
         time_to_sleep = self.config.control_dt - t_elapsed
         if time_to_sleep > 0:
              time.sleep(time_to_sleep)
@@ -387,21 +395,6 @@ if __name__ == "__main__":
     parser.add_argument("net", type=str, help="network interface")
     parser.add_argument("config", type=str, help="config file name in the configs folder", default="h1_2.yaml")
     args = parser.parse_args()
-
-    # # Ensure logs directory exists
-    # os.makedirs("logs/real", exist_ok=True)
-    # if not t_hist:
-    #     print("No data logged, skipping plots.")
-    #     sys.exit()
-
-    
-    # qpos_hist_arr = np.array(qpos_hist)
-    # dqpos_hist_arr = np.array(dqpos_hist)
-    # target_dof_hist_arr = np.array(target_dof_hist)
-    # t_hist_arr = np.array(t_hist)
-
-    # Load config    # print("Config:", config.action_scale, config.cmd_scale, config.dof_pos_scale, config.dof_vel_scale, config.ang_vel_scale)
-    # print("Policy:", config.policy_path)
 
     config_path = f"/home/niraj/isaac_projects/h12_loco_manipulation/h12_real/deploy_real/configs/{args.config}"
     config = Config(config_path)
@@ -437,3 +430,38 @@ if __name__ == "__main__":
     create_damping_cmd(controller.low_cmd)
     controller.send_cmd(controller.low_cmd)
     print("Exit")
+
+
+    # ----------------------------------------------------------------------------------
+    # --- POST-EXECUTION PLOTTING ---
+    # ----------------------------------------------------------------------------------
+
+        # Ensure logs directory exists
+    log_dir = "logs/real"
+    os.makedirs(log_dir, exist_ok=True)
+    
+    qpos_hist_arr = np.array(controller.qpos_hist)
+    dqpos_hist_arr = np.array(controller.dqpos_hist)
+    target_dof_hist_arr = np.array(controller.target_dof_hist)
+    t_hist_arr = np.array(controller.t_hist)
+
+    if not t_hist_arr.size:
+        print("No data logged, skipping plots.")
+        sys.exit() # Exit after cleanup and message if no data
+
+    # Plot qpos vs. target_dof_pos
+    plot_qpos_vs_action(
+        t_hist_arr, 
+        qpos_hist_arr, 
+        target_dof_hist_arr, 
+        JOINT_NAMES_PLOT, 
+        os.path.join(log_dir, "qpos_vs_target.png")
+    )
+    
+    # Plot dqpos
+    plot_dqpos(
+        t_hist_arr, 
+        dqpos_hist_arr, 
+        JOINT_NAMES_PLOT, 
+        os.path.join(log_dir, "dqpos.png")
+    )
