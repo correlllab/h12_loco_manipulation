@@ -129,7 +129,7 @@ def main():
 
             leg_tau = pd_control(
                 target_dof_legs_pos, d.qpos[7:7+config['num_actions']],
-                config['kps_legs'] * 1.33, np.zeros_like(config['kps_legs']),
+                config['kps_legs'], np.zeros_like(config['kps_legs']),
                 d.qvel[6:6+config['num_actions']], config['kds_legs']
             )
             d.ctrl[:config['num_actions']] = leg_tau
