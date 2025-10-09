@@ -1,6 +1,6 @@
 # h12_loco_manipulation
 
-# 0. Prerequisites
+# Prerequisites
 
 - Ubuntu 22.04 Operating System
 - IsaacGym Preview 4.0
