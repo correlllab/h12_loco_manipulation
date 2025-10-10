@@ -1,6 +1,6 @@
 # h12_loco_manipulation
 
-# 0. Prerequisites
+# Prerequisites
 
 - Ubuntu 22.04 Operating System
 - IsaacGym Preview 4.0
@@ -136,31 +136,6 @@ This project has been reorganized for better maintainability and code reuse:
 ### New Structure
 - **`utils/`**: Centralized utilities for plotting, input handling, configuration, and simulation
 - **`configs/`**: Centralized configuration files
-- **Refactored scripts**: Updated scripts using shared utilities
-- **Migration tools**: Scripts to help update existing code
-
-### Key Improvements
-- ✅ **Centralized utilities**: Common functionality shared across all modules
-- ✅ **Unified configuration**: Single source of truth for robot settings
-- ✅ **Better code organization**: Clear separation of concerns
-- ✅ **Rerun integration**: Real-time visualization utilities
-- ✅ **Input handling**: Standardized keyboard control
-
-See `PROJECT_STRUCTURE.md` for detailed documentation.
-
-### Quick Start with New Organization
-
-```bash
-# Run refactored MuJoCo simulation with Rerun visualization
-cd h12_mujoco
-python mujoco_deploy_h12_rerun_refactored.py
-
-# Run refactored MuJoCo simulation with matplotlib plots
-python mujoco_deploy_h12_plot_refactored.py
-
-# Migrate existing scripts to use new utilities
-python migrate_to_utils.py
-```
 
 ## 4. 📝 TODO List
 
