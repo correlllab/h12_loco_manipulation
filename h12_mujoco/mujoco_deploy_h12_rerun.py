@@ -8,6 +8,7 @@ import mujoco
 import mujoco.viewer
 import pygame
 import os
+
 import rerun as rr
 
 ######################################################################
