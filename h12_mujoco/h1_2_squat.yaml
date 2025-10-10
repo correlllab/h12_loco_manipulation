@@ -1,5 +1,5 @@
 # Policy and model paths
-policy_path: "/home/niraj/isaac_projects/h12_loco_manipulation/h12_rl/legged_gym/logs/exported/policies/policy_squat.pt"
+policy_path: "/home/niraj/isaac_projects/h12_loco_manipulation/policies/policy_squat.pt"
 xml_path: "/home/niraj/isaac_projects/h12_loco_manipulation/h12_rl/legged_gym/resources/robots/h1_2_27dof/scene.xml"
 
 # Simulation parameters
