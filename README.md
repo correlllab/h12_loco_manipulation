@@ -128,24 +128,6 @@ pip install -e .
 
 Then you can follow the README.md in each sub-repostory to install all three parts or just one of them.
 
-
-## 3. 📁 Project Organization
-
-This project has been reorganized for better maintainability and code reuse:
-
-### New Structure
-- **`utils/`**: Centralized utilities for plotting, input handling, configuration, and simulation
-- **`configs/`**: Centralized configuration files
-
-## 4. 📝 TODO List
-
-- \[x\] Integrate rerun for visualization
-- \[x\] Centralize utilities and configuration
-- \[x\] Improve project organization
-- \[\] Integrate/test cmd_vel inputs
-- \[\] Add comprehensive unit tests
-- \[\] Create web-based configuration interface
-
 ## 📄 License
 
 ## Acknowledgements
