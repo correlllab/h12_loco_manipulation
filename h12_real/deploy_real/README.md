@@ -1,5 +1,8 @@
 # Deploy on Physical Robot
 
+
+![Real Deployment Controller](assets/real_deployment_arch.png)
+
 ```bash
 python deploy_real.py {net_interface} {config_name}
 ```
