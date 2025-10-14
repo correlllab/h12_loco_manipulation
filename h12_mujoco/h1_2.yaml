@@ -89,4 +89,4 @@ policies:
     # obs_history_len is not specified for walk, so it's omitted here.
 
     # Initial commands
-    cmd_init: [0.0, 0.0, 0.5]
+    cmd_init: [0.0, 0.0, 0.0]

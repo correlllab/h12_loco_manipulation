@@ -4,8 +4,10 @@ import numpy as np
 import mujoco
 import mujoco.viewer
 import rerun as rr
+
 from h12_controller_squat import H12_Controller_Squat
 from h12_controller_walk import H12_Controller_Walk
+
 from utils import pd_control
 
 ######################################################################
@@ -14,8 +16,6 @@ key_states = {
     "w": False, "s": False, "a": False, "d": False,
     "q": False, "e": False, "r": False, "f": False, "x": False,
 }
-
-######################################################################
 # Input handling
 def handle_combined_input(squat_controller, walk_controller):
     """Handle keyboard input and switch between controllers based on commands."""

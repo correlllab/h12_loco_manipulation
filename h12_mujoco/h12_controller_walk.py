@@ -7,9 +7,8 @@ import mujoco.viewer
 import rerun as rr
 
 from utils import (
-    handle_input, load_config, pd_control, get_gravity_orientation, joint_names
+    load_config, pd_control, get_gravity_orientation, joint_names
 )
-
 
 class H12_Controller_Walk:
     """H12 Humanoid Robot Controller for MuJoCo simulation - Walking Policy."""
