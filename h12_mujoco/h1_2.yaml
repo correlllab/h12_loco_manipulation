@@ -63,12 +63,13 @@ policies:
                           0.0, -0.16, 0.0, 0.36, -0.2, 0.0]
 
     # Observation space dimensions
+    single_obs_dim: 76 
     num_obs: 456
     obs_history_len: 6
 
     # Initial commands
     cmd_init: [0.0, 0.0, 0.0]
-    height_cmd: 1.00
+    height_cmd: 1.04
 
   walk:
     policy_path: "/home/niraj/isaac_projects/h12_loco_manipulation/policies/policy_walk.pt"

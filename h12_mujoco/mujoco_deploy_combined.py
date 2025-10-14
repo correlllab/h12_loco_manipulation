@@ -10,12 +10,11 @@ from h12_controller_walk import H12_Controller_Walk
 
 from utils import pd_control
 
+from utils import (
+    key_states
+)
 ######################################################################
-# Track key states manually
-key_states = {
-    "w": False, "s": False, "a": False, "d": False,
-    "q": False, "e": False, "r": False, "f": False, "x": False,
-}
+
 # Input handling
 def handle_combined_input(squat_controller, walk_controller):
     """Handle keyboard input and switch between controllers based on commands."""
@@ -43,14 +42,14 @@ def handle_combined_input(squat_controller, walk_controller):
     # Check for height commands (squatting)
     height_cmd = squat_controller.height_cmd
     if key_states['r']:
-        height_cmd = min(height_cmd + 0.0005, 1.0)
+        height_cmd = min(height_cmd + 0.0005, 1.04)
     if key_states['f']:
         height_cmd = max(height_cmd - 0.0005, 0.65)
     
     # Reset command
     if key_states['x']:
         cmd_vel[:] = 0.0
-        height_cmd = 1.0
+        height_cmd = 1.04
     
     # Update controllers
     walk_controller.set_command(cmd_vel[0], cmd_vel[1], cmd_vel[2])
@@ -102,12 +101,6 @@ def main():
             # Handle input
             cmd_vel, height_cmd = handle_combined_input(squat_controller, walk_controller)
             
-            # Simple logic:
-            # 1. Start with squatting mode
-            # 2. If WASDQE pressed -> switch to walking mode
-            # 3. If R/F pressed -> stay in squatting mode for height control
-            # 4. If X pressed -> reset to squatting mode
-            
             cmd_vel_active = np.any(cmd_vel != 0)
             squat_input_active = key_states['r'] or key_states['f']
             
@@ -116,10 +109,10 @@ def main():
                 # WASDQE pressed -> switch to walking mode
                 if current_mode != "WALKING":
                     current_mode = "WALKING"
-                    # Force height to 1.0 for walking
-                    squat_controller.height_cmd = 1.0
-                    squat_controller.cmd["height"] = 1.0
-                    print("🏃 WASDQE pressed -> WALKING mode (height forced to 1.0)")
+                    # Force height to 1.04 for walking
+                    squat_controller.height_cmd = 1.04
+                    squat_controller.cmd["height"] = 1.04
+                    print("🏃 WASDQE pressed -> WALKING mode (height forced to 1.04)")
             elif squat_input_active:
                 # R/F pressed -> stay in squatting mode for height control
                 if current_mode != "SQUATTING":
@@ -128,8 +121,8 @@ def main():
             elif key_states['x']:
                 # X pressed -> reset to squatting mode
                 current_mode = "SQUATTING"
-                squat_controller.height_cmd = 1.0
-                squat_controller.cmd["height"] = 1.0
+                squat_controller.height_cmd = 1.04
+                squat_controller.cmd["height"] = 1.04
                 print("🧍 X pressed -> Reset to SQUATTING mode")
             
             # Single simulation step with policy switching
@@ -179,19 +172,17 @@ def main():
                     walk_controller.config['kds_legs']
                 )
                 data.ctrl[:walk_controller.config['num_actions']] = leg_tau
-                
                 # Arm torques
-                if walk_controller.n_joints > walk_controller.config['num_actions']:
-                    target_dof_arms_pos = walk_controller.config['default_angles_arms'].copy()
-                    arm_tau = pd_control(
-                        target_dof_arms_pos, 
-                        data.qpos[7+walk_controller.config['num_actions']:7+walk_controller.n_joints],
-                        walk_controller.config['kps_arms'], 
-                        np.zeros(walk_controller.n_joints-walk_controller.config['num_actions']),
-                        data.qvel[6+walk_controller.config['num_actions']:6+walk_controller.n_joints], 
-                        walk_controller.config['kds_arms']
-                    )
-                    data.ctrl[walk_controller.config['num_actions']:] = arm_tau
+                target_dof_arms_pos = walk_controller.config['default_angles_arms'].copy()
+                arm_tau = pd_control(
+                    target_dof_arms_pos, 
+                    data.qpos[7+walk_controller.config['num_actions']:7+walk_controller.n_joints],
+                    walk_controller.config['kps_arms'], 
+                    np.zeros(walk_controller.n_joints-walk_controller.config['num_actions']),
+                    data.qvel[6+walk_controller.config['num_actions']:6+walk_controller.n_joints], 
+                    walk_controller.config['kds_arms']
+                )
+                data.ctrl[walk_controller.config['num_actions']:] = arm_tau
             else:
                 # Sync squat controller data with main simulation
                 squat_controller.data = data
@@ -213,17 +204,16 @@ def main():
                 data.ctrl[:squat_controller.config['num_actions']] = leg_tau
                 
                 # Arm torques
-                if squat_controller.n_joints > squat_controller.config['num_actions']:
-                    target_dof_arms_pos = squat_controller.config['default_angles_arms'].copy()
-                    arm_tau = pd_control(
-                        target_dof_arms_pos, 
-                        data.qpos[7+squat_controller.config['num_actions']:7+squat_controller.n_joints],
-                        squat_controller.config['kps_arms'], 
-                        np.zeros(squat_controller.n_joints-squat_controller.config['num_actions']),
-                        data.qvel[6+squat_controller.config['num_actions']:6+squat_controller.n_joints], 
-                        squat_controller.config['kds_arms']
-                    )
-                    data.ctrl[squat_controller.config['num_actions']:] = arm_tau
+                target_dof_arms_pos = squat_controller.config['default_angles_arms'].copy()
+                arm_tau = pd_control(
+                    target_dof_arms_pos, 
+                    data.qpos[7+squat_controller.config['num_actions']:7+squat_controller.n_joints],
+                    squat_controller.config['kps_arms'], 
+                    np.zeros(squat_controller.n_joints-squat_controller.config['num_actions']),
+                    data.qvel[6+squat_controller.config['num_actions']:6+squat_controller.n_joints], 
+                    squat_controller.config['kds_arms']
+                )
+                data.ctrl[squat_controller.config['num_actions']:] = arm_tau
             
             # Step simulation
             mujoco.mj_step(model, data)
@@ -248,7 +238,6 @@ def main():
     
     print("✅ Combined simulation finished. Check the Rerun viewer for plots.")
 
-######################################################################
-# Entry point
+
 if __name__ == "__main__":
     main()

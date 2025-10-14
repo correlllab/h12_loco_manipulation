@@ -10,11 +10,10 @@ from utils import (
     handle_input, load_config, pd_control, get_gravity_orientation, joint_names
 )
 
-
 class H12_Controller_Squat:
     """H12 Humanoid Robot Controller for MuJoCo simulation."""
     
-    def __init__(self, config_path="h1_2.yaml", policy_name="squat"):
+    def __init__(self, config_path="h1_2.yaml"):
         """Initialize the H12 controller.
         
         Args:
@@ -25,14 +24,11 @@ class H12_Controller_Squat:
         
         # Merge shared params with policy-specific params
         shared_params = self.config.get('shared_params', {})
-        policy_params = self.config.get('policies', {}).get(policy_name, {})
+        policy_params = self.config.get('policies', {}).get("squat")
         
         # Create merged config
         self.config = {**shared_params, **policy_params}
         
-        # Set default values for missing parameters
-        if 'obs_history_len' not in self.config:
-            self.config['obs_history_len'] = 1  # Default for walk policy
         self.model = mujoco.MjModel.from_xml_path(self.config['xml_path'])
         self.data = mujoco.MjData(self.model)
         self.model.opt.timestep = self.config['simulation_dt']
@@ -47,8 +43,9 @@ class H12_Controller_Squat:
             "x": 0.0, 
             "y": 0.0, 
             "yaw": 0.0, 
-            "height": self.config.get("height_cmd", 0.8)
+            "height": self.config.get("height_cmd", 1.04)
         }
+
         self.height_cmd = self.cmd["height"]
         
         # Observation and policy
@@ -68,14 +65,17 @@ class H12_Controller_Squat:
         dqj = self.data.qvel[6:6+self.n_joints].copy()
         quat = self.data.qpos[3:7].copy()
         omega = self.data.qvel[3:6].copy()
+
         default_joints = np.concatenate((self.config.get('default_angles_legs', []), self.config.get('default_angles_arms', [])))
         qj_scaled = (qj - default_joints) * self.config.get('dof_pos_scale', 1.0)
         dqj_scaled = dqj * self.config.get('dof_vel_scale', 1.0)
         gravity_orientation = get_gravity_orientation(quat)
         omega_scaled = omega * self.config.get('ang_vel_scale', 1.0)
         cmd_array = np.array([self.cmd.get("x", 0.0), self.cmd.get("y", 0.0), self.cmd.get("yaw", 0.0)])
-        single_obs_dim = 3 + 1 + 3 + 3 + self.n_joints + self.n_joints + 12
+        
+        single_obs_dim = self.config['single_obs_dim']        
         single_obs = np.zeros(single_obs_dim, dtype=np.float32)
+
         single_obs[0:3] = cmd_array * self.config.get('cmd_scale', np.ones(3))
         single_obs[3:4] = np.array([self.height_cmd])
         single_obs[4:7] = omega_scaled
@@ -83,6 +83,7 @@ class H12_Controller_Squat:
         single_obs[10:10+self.n_joints] = qj_scaled
         single_obs[10+self.n_joints:10+2*self.n_joints] = dqj_scaled
         single_obs[10+2*self.n_joints:10+2*self.n_joints+12] = self.action
+
         return single_obs, single_obs_dim, qj.copy(), dqj.copy()
     
     def _create_obs_history(self):
@@ -116,17 +117,16 @@ class H12_Controller_Squat:
         self.data.ctrl[:self.config['num_actions']] = leg_tau
         
         # Compute arm torques if robot has arms
-        if self.n_joints > self.config['num_actions']:
-            target_dof_arms_pos = self.config['default_angles_arms'].copy()
-            arm_tau = pd_control(
-                target_dof_arms_pos, 
-                self.data.qpos[7+self.config['num_actions']:7+self.n_joints],
-                self.config['kps_arms'], 
-                np.zeros(self.n_joints-self.config['num_actions']),
-                self.data.qvel[6+self.config['num_actions']:6+self.n_joints], 
-                self.config['kds_arms']
-            )
-            self.data.ctrl[self.config['num_actions']:] = arm_tau
+        target_dof_arms_pos = self.config['default_angles_arms'].copy()
+        arm_tau = pd_control(
+            target_dof_arms_pos, 
+            self.data.qpos[7+self.config['num_actions']:7+self.n_joints],
+            self.config['kps_arms'], 
+            np.zeros(self.n_joints-self.config['num_actions']),
+            self.data.qvel[6+self.config['num_actions']:6+self.n_joints], 
+            self.config['kds_arms']
+        )
+        self.data.ctrl[self.config['num_actions']:] = arm_tau
         
         # Step simulation
         mujoco.mj_step(self.model, self.data)
@@ -190,12 +190,12 @@ class H12_Controller_Squat:
         """Reset the controller to initial state."""
         self.data = mujoco.MjData(self.model)
         self.action = np.zeros(self.config['num_actions'], dtype=np.float32)
-        self.target_dof_legs_pos = self.config.get('default_angles_legs', np.zeros(self.config['num_actions'])).copy()
+        self.target_dof_legs_pos = self.config.get('default_angles_legs').copy()
         self.cmd = {
             "x": 0.0, 
             "y": 0.0, 
             "yaw": 0.0, 
-            "height": self.config.get("height_cmd", 0.8)
+            "height": self.config.get("height_cmd", 1.04)
         }
         self.height_cmd = self.cmd["height"]
         self.counter = 0
