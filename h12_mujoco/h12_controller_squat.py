@@ -4,6 +4,7 @@ import torch
 import numpy as np
 import mujoco
 import mujoco.viewer
+
 import rerun as rr
 
 from utils import (

@@ -52,7 +52,7 @@ class H12_Controller_Walk:
         self.policy = torch.jit.load(self.config['policy_path'])
         
         # # Initialize Rerun
-        # rr.init("humanoid_walk_simulation", spawn=True)
+        rr.init("humanoid_walk_simulation", spawn=True)
     
     def _compute_observation(self):
         """Compute observation vector for the walking policy."""
