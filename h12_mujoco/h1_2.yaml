@@ -9,7 +9,8 @@ shared_params:
   # Simulation parameters
   simulation_duration: 60.0
   simulation_dt: 0.002
-  control_decimation: 10 # Results in 50Hz control frequency (0.002 * 10 = 0.02s)
+  control_decimation: 10 
+  # Results in 50Hz control frequency (0.002 * 10 = 0.02s)
 
   # PD gains for arms (identical in both files)
   kps_arms: [150.0,

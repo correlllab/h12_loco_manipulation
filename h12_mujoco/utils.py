@@ -37,11 +37,11 @@ def handle_input(cmd, delta=0.0005):
                 key_states[key_name] = False
 
     if key_states["r"]:
-        cmd["height"] = min(cmd["height"] + delta, 1.0)
+        cmd["height"] = min(cmd["height"] + delta, 1.03)
     if key_states["f"]:
         cmd["height"] = max(cmd["height"] - delta, 0.65)
     if key_states["x"]:
-        cmd = {"x":0.0, "y":0.0, "yaw":0.0, "height":1.0}
+        cmd = {"x":0.0, "y":0.0, "yaw":0.0, "height":1.03}
     return cmd
 
 

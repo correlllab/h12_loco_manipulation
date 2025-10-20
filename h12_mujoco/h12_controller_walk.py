@@ -29,8 +29,7 @@ class H12_Controller_Walk:
         self.config = {**shared_params, **walk_params}
         
         # Set default values for missing parameters
-        if 'obs_history_len' not in self.config:
-            self.config['obs_history_len'] = 1  # Walk policy doesn't use history
+        self.config['obs_history_len'] = 1  # Walk policy doesn't use history
         
         self.model = mujoco.MjModel.from_xml_path(self.config['xml_path'])
         self.data = mujoco.MjData(self.model)
@@ -185,43 +184,3 @@ class H12_Controller_Walk:
                     time.sleep(time_until_next_step)
         
         print("✅ Walk simulation finished. Check the Rerun viewer for plots.")
-    
-    def reset(self):
-        """Reset the controller to initial state."""
-        self.data = mujoco.MjData(self.model)
-        self.action = np.zeros(self.config['num_actions'], dtype=np.float32)
-        self.target_dof_legs_pos = self.config.get('default_angles_legs').copy()
-        self.cmd_vel = np.zeros(3, dtype=np.float32)
-        self.height_cmd = self.config.get("height_cmd")
-        self.counter = 0
-        
-        # Reset observation
-        self.single_obs = self._compute_observation()
-    
-    def get_state(self):
-        """Get current robot state.
-        
-        Returns:
-            dict: Dictionary containing current robot state information
-        """
-        return {
-            'qpos': self.data.qpos.copy(),
-            'qvel': self.data.qvel.copy(),
-            'action': self.action.copy(),
-            'target_dof_legs_pos': self.target_dof_legs_pos.copy(),
-            'cmd_vel': self.cmd_vel.copy(),
-            'height_cmd': self.height_cmd,
-            'counter': self.counter
-        }
-    
-    def set_command(self, x=0.0, y=0.0, yaw=0.0):
-        """Set robot walking command.
-        
-        Args:
-            x (float): Forward velocity command
-            y (float): Lateral velocity command  
-            yaw (float): Angular velocity command
-        """
-        self.cmd_vel[0] = x
-        self.cmd_vel[1] = y
-        self.cmd_vel[2] = yaw

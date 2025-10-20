@@ -66,11 +66,13 @@ class H12_Controller_Squat:
         quat = self.data.qpos[3:7].copy()
         omega = self.data.qvel[3:6].copy()
 
-        default_joints = np.concatenate((self.config.get('default_angles_legs', []), self.config.get('default_angles_arms', [])))
+        default_joints = np.concatenate((self.config.get('default_angles_legs'), self.config.get('default_angles_arms')))
+
         qj_scaled = (qj - default_joints) * self.config.get('dof_pos_scale', 1.0)
         dqj_scaled = dqj * self.config.get('dof_vel_scale', 1.0)
         gravity_orientation = get_gravity_orientation(quat)
         omega_scaled = omega * self.config.get('ang_vel_scale', 1.0)
+        
         cmd_array = np.array([self.cmd.get("x", 0.0), self.cmd.get("y", 0.0), self.cmd.get("yaw", 0.0)])
         
         single_obs_dim = self.config['single_obs_dim']        
@@ -186,52 +188,3 @@ class H12_Controller_Squat:
         
         print("✅ Simulation finished. Check the Rerun viewer for plots.")
     
-    def reset(self):
-        """Reset the controller to initial state."""
-        self.data = mujoco.MjData(self.model)
-        self.action = np.zeros(self.config['num_actions'], dtype=np.float32)
-        self.target_dof_legs_pos = self.config.get('default_angles_legs').copy()
-        self.cmd = {
-            "x": 0.0, 
-            "y": 0.0, 
-            "yaw": 0.0, 
-            "height": self.config.get("height_cmd", 1.04)
-        }
-        self.height_cmd = self.cmd["height"]
-        self.counter = 0
-        
-        # Reset observation history
-        self.single_obs, _, _, _ = self._compute_observation()
-        self.obs_history = self._create_obs_history()
-    
-    def get_state(self):
-        """Get current robot state.
-        
-        Returns:
-            dict: Dictionary containing current robot state information
-        """
-        return {
-            'qpos': self.data.qpos.copy(),
-            'qvel': self.data.qvel.copy(),
-            'action': self.action.copy(),
-            'target_dof_legs_pos': self.target_dof_legs_pos.copy(),
-            'cmd': self.cmd.copy(),
-            'height_cmd': self.height_cmd,
-            'counter': self.counter
-        }
-    
-    def set_command(self, x=0.0, y=0.0, yaw=0.0, height=None):
-        """Set robot command.
-        
-        Args:
-            x (float): Forward velocity command
-            y (float): Lateral velocity command  
-            yaw (float): Angular velocity command
-            height (float): Height command (if None, keeps current height)
-        """
-        self.cmd["x"] = x
-        self.cmd["y"] = y
-        self.cmd["yaw"] = yaw
-        if height is not None:
-            self.cmd["height"] = height
-            self.height_cmd = height
