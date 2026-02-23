@@ -108,6 +108,7 @@ class LeggedRobotCfg(BaseConfig):
         file = ""
         name = "legged_robot"  # actor name
         foot_name = "None" # name of the feet bodies, used to index body state and contact force tensors
+        upper_body_link = "torso_link"  # link name for torso (payload, body displacement); hand links optional for handless robots
         penalize_contacts_on = []
         terminate_after_contacts_on = []
         curriculum_joints = []
@@ -125,10 +126,10 @@ class LeggedRobotCfg(BaseConfig):
         max_angular_velocity = 1000.
         max_linear_velocity = 1000.
         armature = 0.01
-        thickness = 0.01
+        # When control_type == 'M': dofs [num_lower_dof_drive_mode:] use position control; below that use effort. For whole-body (all effort) set to num_dof.
+        num_lower_dof_drive_mode = 12
 
     class domain_rand:
-
         randomize_joint_injection = False
         joint_injection_range = [-0.1, 0.1]
 
@@ -140,6 +141,9 @@ class LeggedRobotCfg(BaseConfig):
 
         randomize_com_displacement = False
         com_displacement_range = [-0.1, 0.1]
+
+        randomize_body_displacement = False
+        body_displacement_range = [-0.1, 0.1]
 
         randomize_link_mass = False
         link_mass_range = [0.7, 1.3]
@@ -162,8 +166,10 @@ class LeggedRobotCfg(BaseConfig):
 
         push_robots = False
         push_interval_s = 5
+        upper_interval_s = 1  # for upper-body action curriculum (humanoid)
         max_push_vel_xy = 1.
-
+        hand_payload_mass_range = [-0.0, 0.0]  # used only if robot has hand links
+        init_upper_ratio = 0.0  # for upper-body action curriculum (humanoid)
         delay = False
 
     class rewards:

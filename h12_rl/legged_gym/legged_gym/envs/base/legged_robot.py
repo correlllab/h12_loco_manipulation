@@ -321,7 +321,7 @@ class LeggedRobot(BaseTask):
                                     imu_projected_gravity,
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,
                                     self.dof_vel * self.obs_scales.dof_vel,
-                                    self.actions[:, :12],
+                                    self.actions[:, :self.num_actions],
                                     ),dim=-1)
         current_actor_obs = torch.clone(current_obs)
         if self.add_noise:
@@ -341,7 +341,7 @@ class LeggedRobot(BaseTask):
                                     imu_projected_gravity,
                                     (self.dof_pos - self.default_dof_pos) * self.obs_scales.dof_pos,
                                     self.dof_vel * self.obs_scales.dof_vel,
-                                    self.actions[:, :12],
+                                    self.actions[:, :self.num_actions],
                                     ),dim=-1)
 
         # add noise if needed
@@ -486,8 +486,9 @@ class LeggedRobot(BaseTask):
         # randomize base mass
         if self.cfg.domain_rand.randomize_payload_mass:
             props[self.torso_body_index].mass = self.default_rigid_body_mass[self.torso_body_index] + self.payload[env_id, 0]
-            props[self.left_hand_index].mass = self.default_rigid_body_mass[self.left_hand_index] + self.hand_payload[env_id, 0]
-            props[self.right_hand_index].mass = self.default_rigid_body_mass[self.right_hand_index] + self.hand_payload[env_id, 1]
+            if self.left_hand_index is not None and self.right_hand_index is not None:
+                props[self.left_hand_index].mass = self.default_rigid_body_mass[self.left_hand_index] + self.hand_payload[env_id, 0]
+                props[self.right_hand_index].mass = self.default_rigid_body_mass[self.right_hand_index] + self.hand_payload[env_id, 1]
 
         if self.cfg.domain_rand.randomize_com_displacement:
             props[0].com = self.default_com + gymapi.Vec3(self.com_displacement[env_id, 0], self.com_displacement[env_id, 1], self.com_displacement[env_id, 2])
@@ -745,7 +746,7 @@ class LeggedRobot(BaseTask):
 
         self.random_upper_actions = torch.zeros((self.num_envs, self.num_actions - self.num_lower_dof), device=self.device)
         self.current_upper_actions = torch.zeros((self.num_envs, self.num_actions - self.num_lower_dof), device=self.device)
-        self.delta_upper_actions = torch.zeros((self.num_envs, 1), device=self.device)
+        self.delta_upper_actions = torch.zeros((self.num_envs, self.num_actions - self.num_lower_dof), device=self.device)
         #randomize kp, kd, motor strength
         self.Kp_factors = torch.ones(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
         self.Kd_factors = torch.ones(self.num_envs, self.num_actions, dtype=torch.float, device=self.device, requires_grad=False)
@@ -884,13 +885,23 @@ class LeggedRobot(BaseTask):
         if self.cfg.domain_rand.randomize_body_displacement:
             self.body_displacement = torch_rand_float(self.cfg.domain_rand.body_displacement_range[0], self.cfg.domain_rand.body_displacement_range[1], (self.num_envs, 3), device=self.device)
 
-        self.torso_body_index = self.body_names.index("torso_link")
+        self.torso_body_index = self.body_names.index(self.cfg.asset.upper_body_link)
 
-        #! CHANGED FOR H12
-        self.left_hand_index = self.body_names.index("L_hand_base_link")
-        self.right_hand_index = self.body_names.index("R_hand_base_link")
+        # Optional hand links (missing in handless URDFs, e.g. h1_2_handless)
+        self.left_hand_index = self.body_names.index("L_hand_base_link") if "L_hand_base_link" in self.body_names else None
+        self.right_hand_index = self.body_names.index("R_hand_base_link") if "R_hand_base_link" in self.body_names else None
 
-
+        # Build PD gains per DOF from config (used for drive mode when control_type == 'M')
+        p_gains_arr = np.zeros(self.num_dof, dtype=np.float32)
+        d_gains_arr = np.zeros(self.num_dof, dtype=np.float32)
+        for i in range(self.num_dof):
+            name = self.dof_names[i]
+            for dof_name in self.cfg.control.stiffness.keys():
+                if dof_name in name:
+                    p_gains_arr[i] = self.cfg.control.stiffness[dof_name]
+                    d_gains_arr[i] = self.cfg.control.damping[dof_name]
+                    break
+        num_lower_drive = getattr(self.cfg.asset, 'num_lower_dof_drive_mode', 12)
 
         for i in range(self.num_envs):
             # create env instance
@@ -903,10 +914,10 @@ class LeggedRobot(BaseTask):
             self.gym.set_asset_rigid_shape_properties(robot_asset, rigid_shape_props)
             actor_handle = self.gym.create_actor(env_handle, robot_asset, start_pose, self.cfg.asset.name, i, self.cfg.asset.self_collisions, 0)
             dof_props = self._process_dof_props(dof_props_asset, i)
-            dof_props["driveMode"][12:].fill(gymapi.DOF_MODE_POS)
-            dof_props["stiffness"][12:] = [300., 200., 200., 200., 100.,  20.,  20.,  20., 200., 200., 200., 100.,  20.,  20.,  20.]
-            dof_props["damping"][12:] = [5.0000, 4.0000, 4.0000, 4.0000, 1.0000, 0.5000, 0.5000,
-                                            0.5000, 4.0000, 4.0000, 4.0000, 1.0000, 0.5000, 0.5000, 0.5000]
+            if self.cfg.control.control_type == "M" and num_lower_drive < self.num_dof:
+                dof_props["driveMode"][num_lower_drive:].fill(gymapi.DOF_MODE_POS)
+                dof_props["stiffness"][num_lower_drive:] = p_gains_arr[num_lower_drive:]
+                dof_props["damping"][num_lower_drive:] = d_gains_arr[num_lower_drive:]
 
 
             self.gym.set_actor_dof_properties(env_handle, actor_handle, dof_props)

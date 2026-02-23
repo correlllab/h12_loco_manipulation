@@ -73,7 +73,6 @@ class H12RoughCfg( LeggedRobotCfg ):
                      }  # [N*m/rad]  # [N*m*s/rad]
         # action scale: target angle = actionScale * action + defaultAngle
         action_scale = 0.25
-        # decimation: Number of control action updates @ sim DT per policy DT
         decimation = 4
         hip_reduction = 1.0
 
@@ -92,7 +91,7 @@ class H12RoughCfg( LeggedRobotCfg ):
             height = [-0.6, 0.0]
 
     class asset( LeggedRobotCfg.asset ):
-        file = '/home/humanoid/isaac_gym_projects/OpenHomie/HomieRL/legged_gym/resources/robots/h1_2/h1_2_27dof.urdf'
+        file = '/home/niraj/gym_projects/h12_loco_manipulation/h12_rl/legged_gym/resources/robots/h1_2/h1_2_handless.urdf'
         name = "h1_2"
         foot_name = "ankle_roll"
         left_foot_name = "left_foot"
@@ -116,6 +115,8 @@ class H12RoughCfg( LeggedRobotCfg ):
         upper_body_link = "torso_link"
         imu_link = "imu_link"
         knee_names = ["left_knee_link", "left_hip_yaw_link", "right_knee_link", "right_hip_yaw_link"]
+        # Whole-body: all 27 DoFs torque-controlled (no position-controlled upper DoFs)
+        num_lower_dof_drive_mode = 27
         self_collision = 1
         flip_visual_attachments = False
         ankle_sole_distance = 0.04 #! NOT SURE WHAT IS IDEAL!
@@ -133,7 +134,7 @@ class H12RoughCfg( LeggedRobotCfg ):
 
         randomize_payload_mass = use_random
         # payload_mass_range = [-5, 10]
-        payload_mass_range = [-10, 15]  #! NOT SURE WHAT IS IDEAL!
+        payload_mass_range = [-2, 5]  #! NOT SURE WHAT IS IDEAL!
 
         hand_payload_mass_range = [-0.2, 0.5]   #! NOT SURE WHAT IS IDEAL!
 
@@ -183,9 +184,9 @@ class H12RoughCfg( LeggedRobotCfg ):
             tracking_base_height = 2. # try height tracking
             # base_height = -10.0
             # base_height_wrt_feet = 0.1
-            deviation_all_joint = 0
-            deviation_arm_joint = 0  #-0.1
-            deviation_leg_joint = 0
+            # deviation_all_joint = 0
+            # deviation_arm_joint = 0  #-0.1
+            # deviation_leg_joint = 0
             deviation_hip_joint = -0.2  #0. #-0.5
             deviation_waist_joint = 0  #-0.25
             deviation_ankle_joint = -0.5
@@ -224,7 +225,7 @@ class H12RoughCfg( LeggedRobotCfg ):
         soft_dof_pos_limit = 0.975 # percentage of urdf limits, values above this limit are penalized
         soft_dof_vel_limit = 0.80
         soft_torque_limit = 0.95
-        base_height_target = 0.98 # default is 1.0
+        base_height_target = 1.00 # default is 1.0
         max_contact_force = 600. # forces above this value are penalized
         least_feet_distance = 0.3 #! NOT SURE WHAT IS IDEAL!
         least_feet_distance_lateral = 0.3
@@ -235,15 +236,15 @@ class H12RoughCfg( LeggedRobotCfg ):
 
     class env( LeggedRobotCfg.rewards ):
         num_envs = 4096
-        num_actions = 12 # number of actuators on robot
+        num_actions = 27 # number of actuators on robot
         # num_dofs = 43
         num_dofs = 27
-        num_one_step_observations = 2 * num_dofs + 10 + num_actions # 54 + 10 + 12 = 22 + 54 = 76
+        num_one_step_observations = 2 * num_dofs + 10 + num_actions # 54 + 10 + 27 = 91
         num_one_step_privileged_obs = num_one_step_observations + 3
         num_actor_history = 6
         num_critic_history = 1
-        num_observations = num_actor_history * num_one_step_observations #+ 96
-        num_privileged_obs = num_critic_history * num_one_step_privileged_obs #+ 187
+        num_observations = num_actor_history * num_one_step_observations #6* 91 = 546
+        num_privileged_obs = num_critic_history * num_one_step_privileged_obs #1* 94 = 94
         action_curriculum = True
         env_spacing = 3.  # not used with heightfields/trimeshes
         send_timeouts = True # send time out information to the algorithm
@@ -277,9 +278,9 @@ class H12RoughCfgPPO( LeggedRobotCfgPPO ):
         save_interval = 200
         num_steps_per_env = 50
         max_iterations = 10000
-        run_name = 'h1_2'
-        experiment_name = 'h1_2'
-        wandb_project = "h1_2"
+        run_name = 'h12_wb_homie'
+        experiment_name = 'h12_wb_homie'
+        wandb_project = "h12_wb_homie"
         logger = "wandb"
         # logger = "tensorboard"
         wandb_user = ""

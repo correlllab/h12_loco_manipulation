@@ -31,10 +31,12 @@
 from legged_gym import LEGGED_GYM_ROOT_DIR, LEGGED_GYM_ENVS_DIR
 from .base.legged_robot import LeggedRobot
 
-from legged_gym.envs.h1_2.h1_2_config_new import H12RoughCfg, H12RoughCfgPPO
+# from legged_gym.envs.h1_2.h1_2_config_new import H12RoughCfg, H12RoughCfgPPO
+from legged_gym.envs.h1_2.h1_2_config_WB import H12RoughCfg as H12WBCfg, H12RoughCfgPPO as H12WBCfgPPO
 
 import os
 
 from legged_gym.utils.task_registry import task_registry
 
-task_registry.register( "h1_2_height", LeggedRobot, H12RoughCfg(), H12RoughCfgPPO() )
+# task_registry.register("h1_2_height", LeggedRobot, H12RoughCfg(), H12RoughCfgPPO())
+task_registry.register("h12_wb_homie", LeggedRobot, H12WBCfg(), H12WBCfgPPO())
